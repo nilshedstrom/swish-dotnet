@@ -1,6 +1,6 @@
 ﻿using System.Net.Http;
 
-namespace Client
+namespace SwishClient
 {
     public class SwishException : HttpRequestException
     {

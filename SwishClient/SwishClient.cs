@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Client
+namespace SwishClient
 {
     /// <summary>
     /// Swish client

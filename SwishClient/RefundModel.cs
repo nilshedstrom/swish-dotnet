@@ -1,4 +1,4 @@
-﻿namespace Client
+﻿namespace SwishClient
 {
     public class RefundModel
     {

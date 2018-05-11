@@ -4,7 +4,7 @@
 
 ---
 
-A .net swish client written in .net core 1.0.
+A .net swish client written in .net core.
 
 ## Usage
 

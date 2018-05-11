@@ -2,7 +2,7 @@
 using System;
 using Newtonsoft.Json.Serialization;
 
-namespace Client
+namespace SwishClient
 {
     public abstract class PaymentModel
     {

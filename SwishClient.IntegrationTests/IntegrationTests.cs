@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Client.IntegrationTests
+namespace SwishClient.IntegrationTests
 {
     public class IntegrationTests
     {
