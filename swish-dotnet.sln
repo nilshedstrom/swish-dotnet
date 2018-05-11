@@ -1,24 +1,23 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2043
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B2233A79-F8C8-477C-B00E-09C13D6C1A9E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0A79E67B-4E4F-4A3E-938A-87E48F509785}"
 	ProjectSection(SolutionItems) = preProject
 		appveyor.yml = appveyor.yml
-		global.json = global.json
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Client", "src\Client\Client.xproj", "{83FF5417-CD67-4A49-93D9-8191844D31E5}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B008A285-8BD0-446F-9F1E-39CFA387D9F8}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Client.UnitTests", "tests\Client.UnitTests\Client.UnitTests.xproj", "{9BCC6468-E500-4860-A86F-9EEC68574488}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "src\Client\Client.csproj", "{83FF5417-CD67-4A49-93D9-8191844D31E5}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Client.IntegrationTests", "tests\Client.IntegrationTests\Client.IntegrationTests.xproj", "{718BD34E-8722-40E9-B8AC-766AEDBD9272}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client.UnitTests", "tests\Client.UnitTests\Client.UnitTests.csproj", "{9BCC6468-E500-4860-A86F-9EEC68574488}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client.IntegrationTests", "tests\Client.IntegrationTests\Client.IntegrationTests.csproj", "{718BD34E-8722-40E9-B8AC-766AEDBD9272}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,5 +45,8 @@ Global
 		{83FF5417-CD67-4A49-93D9-8191844D31E5} = {B2233A79-F8C8-477C-B00E-09C13D6C1A9E}
 		{9BCC6468-E500-4860-A86F-9EEC68574488} = {B008A285-8BD0-446F-9F1E-39CFA387D9F8}
 		{718BD34E-8722-40E9-B8AC-766AEDBD9272} = {B008A285-8BD0-446F-9F1E-39CFA387D9F8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {40E74911-D467-47CC-B915-148042B4DF75}
 	EndGlobalSection
 EndGlobal
