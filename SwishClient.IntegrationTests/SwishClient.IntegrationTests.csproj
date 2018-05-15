@@ -22,6 +22,24 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="certificates\GetSwishRootCAv2Test.cer">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="certificates\GetSwishRootCAv2Test.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="certificates\SwedbankCustomerCA1v1forSwish.cer">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="certificates\SwedbankCustomerCA1v1forSwish.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="certificates\SwedbankRootCAv2forSwishTest.cer">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="certificates\SwedbankRootCAv2forSwishTest.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="certificates\SwishMerchantTestCertificate1231181189.p12">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

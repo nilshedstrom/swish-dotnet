@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SwishClient
 {
@@ -6,33 +7,24 @@ namespace SwishClient
     {
         Uri BaseUri();
 
-        string GetMerchantId();
-    }
-
-    public class ProductionConfig : IConfiguration
-    {
-        private readonly string _merchantId;
-        public ProductionConfig(string merchantId)
-        {
-            _merchantId = merchantId;
-        }
-
-        public Uri BaseUri() => new Uri("https://swicpc.bankgirot.se");
-
-        public string GetMerchantId() => _merchantId;
+        X509Certificate2 GetCACertificate();
     }
 
     public class TestConfig : IConfiguration
     {
-        private readonly string _merchantId;
+        private readonly X509Certificate2 _caCert;
+        public X509Certificate2 GetCACertificate() => _caCert;
 
-        public TestConfig(string merchantId)
+        public Uri BaseUri() => new Uri("https://mss.cpc.getswish.net");
+
+        /// <summary>
+        /// Creates new test config to test swish integration with Merchant Simulator
+        /// Docs: https://developer.getswish.se/merchants-test-con/1-introduction/
+        /// </summary>
+        /// <param name="caCert">Optional CA root certificate used to verify server certificate, if not provided, no server certificate validation will be done</param>
+        public TestConfig(X509Certificate2 caCert)
         {
-            _merchantId = merchantId;
+            _caCert = caCert;
         }
-
-        public Uri BaseUri() => new Uri("https://mss.swicpc.bankgirot.se");
-
-        public string GetMerchantId() => _merchantId;
     }
 }
