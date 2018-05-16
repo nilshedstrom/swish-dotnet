@@ -2,8 +2,7 @@
 {
     public class RefundModel
     {
-        public RefundModel(string originalPaymentReference, string callbackUrl, string payerAlias,
-            string amount, string currency)
+        public RefundModel(string originalPaymentReference, string callbackUrl, string payerAlias, string amount, string currency)
         {
             OriginalPaymentReference = originalPaymentReference;
             CallbackUrl = callbackUrl;
@@ -33,8 +32,8 @@
 
     public class RefundStatusModel : RefundModel
     {
-        public RefundStatusModel(string originalPaymentReference, string callbackUrl, 
-            string payerAlias, string amount, string currency) 
+        public RefundStatusModel(string originalPaymentReference, string callbackUrl,
+            string payerAlias, string amount, string currency)
             : base(originalPaymentReference, callbackUrl, payerAlias, amount, currency)
         { }
 

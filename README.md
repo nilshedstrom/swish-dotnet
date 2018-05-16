@@ -1,7 +1,5 @@
 # A .Net Swish Client
 
----
-
 Swish (https://www.getswish.se/) client library written in .NET Core (.NET Standard 2.0).
 
 ## Usage
