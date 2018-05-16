@@ -7,21 +7,14 @@ namespace SwishClient.IntegrationTests
 {
     public class IntegrationTests
     {
-        private readonly IConfiguration configuration;
-
-        public IntegrationTests()
-        {
-            var caCert = new X509Certificate2("certificates/TestSwishRootCAv1Test.pem");
-            configuration = new TestConfig(caCert);
-        }
-
         [Fact]
         public async Task ECommerceScenario()
         {
-            var clientCert = new X509Certificate2("certificates/SwishMerchantTestCertificate1231181189.p12", "swish");
-            var clientId = "1231181189";
+            var merchantCertificateData = System.IO.File.ReadAllBytes("certificates/1231181189.p12");
+            var merchantCertificatePassword = "swish";
+            var merchantId = "1231181189";
 
-            var client = new SwishClient(configuration, clientCert, clientId);
+            var client = new SwishClient(SwishEnvironment.Test, merchantCertificateData, merchantCertificatePassword, merchantId);
 
             // Make payment
             var ecommercePaymentModel = new ECommercePaymentModel(

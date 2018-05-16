@@ -17,46 +17,118 @@ namespace SwishClient
     public class SwishClient
     {
         private readonly HttpClient _client;
-        private readonly IConfiguration _configuration;
-        private const string PaymentPath = "swish-cpcapi/api/v1/paymentrequests";
-        private const string RefundPath = "swish-cpcapi/api/v1/refunds";
 
+        public readonly SwishEnvironment Environment;
         public readonly string MerchantId;
+
+        private string _paymentRequestsPath
+        {
+            get
+            {
+                return Environment == SwishEnvironment.Production ?
+                    "https://swicpc.bankgirot.se/swish-cpcapi/api/v1/paymentrequests/" :
+                    "https://mss.swicpc.bankgirot.se/swish-cpcapi/api/v1/paymentrequests/";
+            }
+        }
+        private string _refundsPath
+        {
+            get
+            {
+                return Environment == SwishEnvironment.Production ?
+                    "https://swicpc.bankgirot.se/swish-cpcapi/api/v1/refunds/" :
+                    "https://mss.swicpc.bankgirot.se/swish-cpcapi/api/v1/refunds/";
+            }
+        }
+
+
         /// <summary>
         /// Default constructor
         /// </summary>
         /// <param name="configuration">The client configuration</param>
         /// <param name="cert">The client certificate</param>
-        public SwishClient(IConfiguration configuration, X509Certificate2 cert, string merchantId)
+        public SwishClient(SwishEnvironment environment, byte[] clientCertData, string clientCertPassword, string merchantId)
         {
-            // todo: add not null checks for args
-
-            //Only TLS 1.1 works
-            //ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11;
-
+            Environment = environment;
             MerchantId = merchantId;
 
+            //Basic set up 
+            ServicePointManager.CheckCertificateRevocationList = false;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+            var clientCerts = new X509Certificate2Collection();
+            clientCerts.Import(clientCertData, clientCertPassword ?? "", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
+
+            //Assert CA certs in cert store, and get root CA 
+            var rootCertificate = AssertCertsInStore(clientCerts);
+
             var handler = new HttpClientHandler();
-            handler.ClientCertificates.Add(cert);
-            
-            var caCert = configuration.GetCACertificate();
-            if (caCert != null)
+            handler.ClientCertificates.AddRange(clientCerts);
+
+            handler.ServerCertificateCustomValidationCallback = (sender, certificate, chain, errors) =>
             {
-                SetupServerCertificateValidation(handler, caCert);
+                var x509ChainElement = chain.ChainElements.OfType<X509ChainElement>().LastOrDefault();
+                if (x509ChainElement == null) return false;
+                var c = x509ChainElement.Certificate;
+                return c.Equals(rootCertificate);
+            };
+
+            _client = new HttpClient(handler);
+        }
+
+        /// <summary>
+        /// Function that fixes the certificate so that you do not have to install it on the certificate store on the server
+        /// Source https://www.wn.se/showthread.php?p=20516204#post20516204
+        /// Author: Jack Jönsson from infringo.se 
+        /// </summary>
+        /// <param name="certs">Collection of certificates to get root CA from</param>
+        /// <returns></returns>
+        private static X509Certificate2 AssertCertsInStore(X509Certificate2Collection certs)
+        {
+            //Create typed array 
+            var certArr = certs.OfType<X509Certificate2>().ToArray();
+
+            //Build certificate chain 
+            var chain = new X509Chain();
+
+            chain.ChainPolicy.ExtraStore.AddRange(certArr.Where(o => !o.HasPrivateKey).ToArray());
+
+            var privateCert = certArr.FirstOrDefault(o => o.HasPrivateKey);
+
+            if (privateCert == null) return null;
+
+            var result = chain.Build(privateCert);
+
+            //Get CA certs 
+            var caCerts = chain.ChainElements.OfType<X509ChainElement>().Where(o => !o.Certificate.HasPrivateKey).Select(o => o.Certificate).ToArray();
+
+            if (caCerts == null || caCerts.Length == 0) return null;
+
+            //Assert CA certs in intermediate CA store 
+            var intermediateStore = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser);
+
+            intermediateStore.Open(OpenFlags.ReadWrite);
+
+            foreach (var ca in caCerts)
+            {
+                if (!intermediateStore.Certificates.Contains(ca))
+                    intermediateStore.Add(ca);
             }
 
-            _configuration = configuration;
-            _client = new HttpClient(handler) { BaseAddress = configuration.BaseUri() };
+            intermediateStore.Close();
+
+            //Return last CA in chain (root CA) 
+            return caCerts.LastOrDefault();
         }
+
 
         /// <summary>
         /// Initializes the swish client to use injected httpclient. Primarily used for testing purposes.
         /// </summary>
-        /// <param name="configuration"></param>
         /// <param name="httpClient">A HttpClient</param>
-        public SwishClient(IConfiguration configuration, HttpClient httpClient)
+        /// <param name="merchantId">Merchant Id</param>
+        public SwishClient(HttpClient httpClient, string merchantId)
         {
-            _configuration = configuration;
+            MerchantId = merchantId;
             _client = httpClient;
         }
 
@@ -68,7 +140,7 @@ namespace SwishClient
         public async Task<ECommercePaymentResponse> MakeECommercePaymentAsync(ECommercePaymentModel payment)
         {
             payment.PayeeAlias = MerchantId;
-            var response = await Post(payment, PaymentPath);
+            var response = await Post(payment, _paymentRequestsPath);
             var responseContent = await response.Content.ReadAsStringAsync();
             if (response.StatusCode == (HttpStatusCode)422)
             {
@@ -87,7 +159,7 @@ namespace SwishClient
         public async Task<MCommercePaymentResponse> MakeMCommercePaymentAsync(MCommercePaymentModel payment)
         {
             payment.PayeeAlias = MerchantId;
-            var response = await Post(payment, PaymentPath);
+            var response = await Post(payment, _paymentRequestsPath);
             var responseContent = await response.Content.ReadAsStringAsync();
             if (response.StatusCode == (HttpStatusCode)422)
             {
@@ -105,7 +177,7 @@ namespace SwishClient
         /// <returns>The payment status</returns>
         public async Task<PaymentStatusModel> GetPaymentStatus(string id)
         {
-            var uri = $"{PaymentPath}/{id}";
+            var uri = $"{_paymentRequestsPath}/{id}";
             var response = await Get(uri);
             response.EnsureSuccessStatusCode();
             var responseContent = await response.Content.ReadAsStringAsync();
@@ -120,7 +192,7 @@ namespace SwishClient
         /// <returns>The refund response containing the location of the refund status</returns>
         public async Task<SwishApiResponse> MakeRefundAsync(RefundModel refund)
         {
-            var response = await Post(refund, RefundPath);
+            var response = await Post(refund, _refundsPath);
             var responseContent = await response.Content.ReadAsStringAsync();
             if (response.StatusCode == (HttpStatusCode)422)
             {
@@ -138,7 +210,7 @@ namespace SwishClient
         /// <returns>The refund status</returns>
         public async Task<RefundStatusModel> GetRefundStatus(string id)
         {
-            var uri = $"{RefundPath}/{id}";
+            var uri = $"{_refundsPath}/{id}";
             var response = await Get(uri);
             var responseContent = await response.Content.ReadAsStringAsync();
 
@@ -180,23 +252,9 @@ namespace SwishClient
             });
 
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = _client.PostAsync(path, content);
-
-            return response;
+            return _client.PostAsync(path, content);
         }
 
         private Task<HttpResponseMessage> Get(string path) => _client.GetAsync(path);
-
-        private static void SetupServerCertificateValidation(HttpClientHandler handler, X509Certificate2 caCert)
-        {
-            handler.ServerCertificateCustomValidationCallback =
-                (sender, certificate, chain, errors) =>
-                {
-                    var x509ChainElement = chain.ChainElements.OfType<X509ChainElement>().LastOrDefault();
-                    if (x509ChainElement == null) return false;
-                    var c = x509ChainElement.Certificate;
-                    return c.Equals(caCert);
-                };
-        }
     }
 }
