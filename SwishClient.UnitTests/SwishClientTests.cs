@@ -8,18 +8,15 @@ using Xunit;
 
 namespace SwishClient.UnitTests
 {
-    // This project can output the Class library as a NuGet Package.
-    // To enable this option, right-click on the project and select the Properties menu item. In the Build tab select "Produce outputs on build".
     public class SwishClientTests
     {
-        private readonly IConfiguration _configuration;
+        private readonly string _merchantId = "1231181189";
         private readonly ECommercePaymentModel _defaultECommercePaymentModel;
         private readonly MCommercePaymentModel _defaultMCommercePaymentModel;
         private readonly RefundModel _defaultRefund;
 
         public SwishClientTests()
         {
-            _configuration = new TestConfig("1231181189");
             _defaultECommercePaymentModel = new ECommercePaymentModel(
                 amount: "100",
                 callbackUrl: "https://example.com/api/swishcb/paymentrequests",
@@ -58,7 +55,7 @@ namespace SwishClient.UnitTests
             string locationHeader = $"https://mss.swicpc.bankgirot.se/swishcpcapi/v1/paymentrequests/{paymentId}";
             var headerValues = new Dictionary<string, string>() { { "Location", locationHeader } };
             var responseMessage = Create201HttpJsonResponseMessage(_defaultECommercePaymentModel, headerValues);
-            var client = new SwishClient(_configuration, MockHttp.WithResponseMessage(responseMessage));
+            var client = new SwishClient(MockHttp.WithResponseMessage(responseMessage), _merchantId);
 
             // Act
             var response = await client.MakeECommercePaymentAsync(_defaultECommercePaymentModel);
@@ -73,8 +70,8 @@ namespace SwishClient.UnitTests
         {
             var errorMsg = "Testing error";
             var mockHttp = MockHttp.WithStatusAndContent(422, errorMsg);
-            var client = new SwishClient(_configuration, mockHttp);
-            var exception = await Assert.ThrowsAsync<SwishException>(() => 
+            var client = new SwishClient(mockHttp, _merchantId);
+            var exception = await Assert.ThrowsAsync<HttpRequestException>(() => 
                 client.MakeECommercePaymentAsync(_defaultECommercePaymentModel));
             Assert.Equal(errorMsg, exception.Message);
         }
@@ -83,7 +80,7 @@ namespace SwishClient.UnitTests
         public async Task MakeECommercePayment_Throws_Http_Exception_For_Not_Ok_Status_Codes()
         {
             var mockHttp = MockHttp.WithStatus(500);
-            var client = new SwishClient(_configuration, mockHttp);
+            var client = new SwishClient(mockHttp, _merchantId);
             await Assert.ThrowsAsync<HttpRequestException>(() => 
             client.MakeECommercePaymentAsync(_defaultECommercePaymentModel));
         }
@@ -99,15 +96,15 @@ namespace SwishClient.UnitTests
                 { "PaymentRequestToken", "f34DS34lfd0d03fdDselkfd3ffk21" }
             };
             var responseMessage = Create201HttpJsonResponseMessage(_defaultMCommercePaymentModel, headerValues);
-            var client = new SwishClient(_configuration, MockHttp.WithResponseMessage(responseMessage));
+            var client = new SwishClient(MockHttp.WithResponseMessage(responseMessage), _merchantId);
 
             // Act
             var response = await client.MakeMCommercePaymentAsync(_defaultMCommercePaymentModel);
 
             // Assert
-            Assert.Equal(response.Location, locationHeader);
-            Assert.Equal(response.Id, paymentId);
-            Assert.Equal(response.Token, "f34DS34lfd0d03fdDselkfd3ffk21");
+            Assert.Equal(locationHeader, response.Location);
+            Assert.Equal(paymentId, response.Id);
+            Assert.Equal("f34DS34lfd0d03fdDselkfd3ffk21", response.Token);
         }
 
         [Fact]
@@ -115,9 +112,10 @@ namespace SwishClient.UnitTests
         {
             var errorMsg = "Testing error";
             var mockHttp = MockHttp.WithStatusAndContent(422, errorMsg);
-            var client = new SwishClient(_configuration, mockHttp);
-            var exception = await Assert.ThrowsAsync<SwishException>(() =>
+            var client = new SwishClient(mockHttp, _merchantId);
+            var exception = await Assert.ThrowsAsync<HttpRequestException>(() =>
                 client.MakeMCommercePaymentAsync(_defaultMCommercePaymentModel));
+
             Assert.Equal(errorMsg, exception.Message);
         }
 
@@ -125,7 +123,7 @@ namespace SwishClient.UnitTests
         public async Task MakeMCommercePayment_Throws_Http_Exception_For_Not_Ok_Status_Codes()
         {
             var mockHttp = MockHttp.WithStatus(500);
-            var client = new SwishClient(_configuration, mockHttp);
+            var client = new SwishClient(mockHttp, _merchantId);
             await Assert.ThrowsAsync<HttpRequestException>(() =>
             client.MakeMCommercePaymentAsync(_defaultMCommercePaymentModel));
         }
@@ -137,7 +135,7 @@ namespace SwishClient.UnitTests
             string locationHeader = $"https://mss.swicpc.bankgirot.se/swishcpcapi/v1/refunds/{refundId}";
             var headerValues = new Dictionary<string, string>() { { "Location", locationHeader } };
             var responseMessage = Create201HttpJsonResponseMessage(_defaultRefund, headerValues);
-            var client = new SwishClient(_configuration, MockHttp.WithResponseMessage(responseMessage));
+            var client = new SwishClient(MockHttp.WithResponseMessage(responseMessage), _merchantId);
 
             // Act
             var response = await client.MakeRefundAsync(_defaultRefund);

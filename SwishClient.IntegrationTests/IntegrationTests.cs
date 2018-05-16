@@ -7,14 +7,22 @@ namespace SwishClient.IntegrationTests
 {
     public class IntegrationTests
     {
+        private readonly byte[] _merchantCertificateData;
+        private readonly string _merchantCertificatePassword;
+        private readonly string _merchantId;
+
+        public IntegrationTests()
+        {
+            _merchantCertificateData = System.IO.File.ReadAllBytes("certificates/1231181189.p12");
+            _merchantCertificatePassword = "swish";
+            _merchantId = "1231181189";
+        }
+
+
         [Fact]
         public async Task ECommerceScenario()
         {
-            var merchantCertificateData = System.IO.File.ReadAllBytes("certificates/1231181189.p12");
-            var merchantCertificatePassword = "swish";
-            var merchantId = "1231181189";
-
-            var client = new SwishClient(SwishEnvironment.Test, merchantCertificateData, merchantCertificatePassword, merchantId);
+            var client = new SwishClient(SwishEnvironment.Test, _merchantCertificateData, _merchantCertificatePassword, _merchantId);
 
             // Make payment
             var ecommercePaymentModel = new ECommercePaymentModel(
@@ -57,13 +65,11 @@ namespace SwishClient.IntegrationTests
             Assert.Equal("PAID", refundStatus.Status);
         }
 
-        /*
+
         [Fact]
         public async Task MCommerceScenario()
         {
-            var clientCert = new X509Certificate2("testcertificates/SwishMerchantTestCertificate1231181189.p12", "swish");
-            var caCert = new X509Certificate2("testcertificates/TestSwishRootCAv1Test.pem");
-            var client = new SwishClient(configuration, clientCert, caCert);
+            var client = new SwishClient(SwishEnvironment.Test, _merchantCertificateData, _merchantCertificatePassword, _merchantId);
 
             // Make payment
             var mcommercePaymentModel = new MCommercePaymentModel(
@@ -103,6 +109,6 @@ namespace SwishClient.IntegrationTests
             // Check refund request status
             var refundStatus = await client.GetRefundStatus(refundResponse.Id);
             Assert.Equal("PAID", refundStatus.Status);
-        }*/
+        }
     }
 }

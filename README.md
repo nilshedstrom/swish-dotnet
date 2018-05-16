@@ -1,20 +1,21 @@
 # A .Net Swish Client
 
-![Build status](https://nikolofs.visualstudio.com/_apis/public/build/definitions/7e23ce7e-e7b1-47d3-9159-53e637633209/3/badge)
-
 ---
 
-A .net swish client written in .net core.
+Swish (https://www.getswish.se/) client library written in .NET Core (.NET Standard 2.0).
 
 ## Usage
 
-(Make sure to install the root certificate to your machine)
+Test scenario works without installing any certificates, works in Linux aswell.
+Production use is not yet fully tested.
 
 ### Initializing the client
 ```C#
-var clientCert = new X509Certificate2("testcertificates/SwishMerchantTestCertificate1231181189.p12", "swish");
-var caCert = new X509Certificate2("testcertificates/TestSwishRootCAv1Test.pem");
-var client = new SwishClient(configuration, clientCert, caCert);
+var merchantCertificateData = System.IO.File.ReadAllBytes("certificates/1231181189.p12");
+var merchantCertificatePassword = "swish";
+var merchantId = "1231181189";
+
+var client = new SwishClient(SwishEnvironment.Test, merchantCertificateData, merchantCertificatePassword, merchantId);
 ```
 
 ### Making a payment request

@@ -5,15 +5,14 @@ VisualStudioVersion = 15.0.27428.2043
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0A79E67B-4E4F-4A3E-938A-87E48F509785}"
 	ProjectSection(SolutionItems) = preProject
-		appveyor.yml = appveyor.yml
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwishClient", "SwishClient\SwishClient.csproj", "{9C0B6408-9078-470A-AB81-09937CBBE753}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SwishClient", "SwishClient\SwishClient.csproj", "{9C0B6408-9078-470A-AB81-09937CBBE753}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwishClient.IntegrationTests", "SwishClient.IntegrationTests\SwishClient.IntegrationTests.csproj", "{EC1FCE83-1AC2-4A4F-96A1-E46028B59C9A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SwishClient.IntegrationTests", "SwishClient.IntegrationTests\SwishClient.IntegrationTests.csproj", "{EC1FCE83-1AC2-4A4F-96A1-E46028B59C9A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwishClient.UnitTests", "SwishClient.UnitTests\SwishClient.UnitTests.csproj", "{A9D55AAE-22D6-4986-9ECA-2F1D6B32E933}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SwishClient.UnitTests", "SwishClient.UnitTests\SwishClient.UnitTests.csproj", "{A9D55AAE-22D6-4986-9ECA-2F1D6B32E933}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
