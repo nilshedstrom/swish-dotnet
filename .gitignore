@@ -234,3 +234,5 @@ _Pvt_Extensions
 
 # FAKE - F# Make
 .fake/
+/SwishClient.IntegrationTests/certificates/prod.pem
+/SwishClient.IntegrationTests/certificates/private.key

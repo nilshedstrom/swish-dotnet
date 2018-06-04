@@ -16,7 +16,7 @@ namespace SwishClient
     /// </summary>
     public class SwishClient
     {
-        private readonly HttpClient _client;
+        private HttpClient _client;
 
         public readonly SwishEnvironment Environment;
         public readonly string MerchantId;
@@ -26,7 +26,7 @@ namespace SwishClient
             get
             {
                 return Environment == SwishEnvironment.Production ?
-                    "https://swicpc.bankgirot.se/swish-cpcapi/api/v1/paymentrequests/" :
+                    "https://swicpc.bankgirot.se/swish-cpcapi/api/v1/" :
                     "https://mss.swicpc.bankgirot.se/swish-cpcapi/api/v1/paymentrequests/";
             }
         }
@@ -35,7 +35,7 @@ namespace SwishClient
             get
             {
                 return Environment == SwishEnvironment.Production ?
-                    "https://swicpc.bankgirot.se/swish-cpcapi/api/v1/refunds/" :
+                    "https://swicpc.bankgirot.se/swish-cpcapi/api/v1/" :
                     "https://mss.swicpc.bankgirot.se/swish-cpcapi/api/v1/refunds/";
             }
         }
@@ -44,24 +44,62 @@ namespace SwishClient
         /// <summary>
         /// Default constructor
         /// </summary>
-        /// <param name="configuration">The client configuration</param>
-        /// <param name="cert">The client certificate</param>
-        public SwishClient(SwishEnvironment environment, byte[] clientCertData, string clientCertPassword, string merchantId)
+        /// <param name="environment">Swish environment to use</param>
+        /// <param name="clientCertData">The client P12 certificate</param>
+        /// <param name="clientCertPassword">Password for certificate collection (can be null)</param>
+        /// <param name="merchantId">Swish Merchant ID</param>
+        public SwishClient(SwishEnvironment environment, byte[] P12CertificateCollection, string P12CertificateCollectionPassphrase, string merchantId)
         {
             Environment = environment;
             MerchantId = merchantId;
             
             var clientCerts = new X509Certificate2Collection();
-            clientCerts.Import(clientCertData, clientCertPassword ?? "", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
+            clientCerts.Import(P12CertificateCollection, P12CertificateCollectionPassphrase ?? "", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
 
             // assert CA certs in cert store, and get root CA 
             var rootCertificate = AssertCertsInStore(clientCerts);
 
+            InitializeClient(clientCerts, rootCertificate);
+        }
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        /// <param name="environment">Swish environment to use</param>
+        /// <param name="clientCertData">The client P12 certificate</param>
+        /// <param name="clientCertPassword">Password for certificate collection (can be null)</param>
+        /// <param name="merchantId">Swish Merchant ID</param>
+        public SwishClient(SwishEnvironment environment, byte[] PEMCertificate, byte[] clientPrivateKey, string clientPrivateKeyPassphrase,  string merchantId)
+        {
+
+            Environment = environment;
+            MerchantId = merchantId;
+            try
+            {
+                var clientCerts = new X509Certificate2Collection();
+                clientCerts.Import(clientPrivateKey, clientPrivateKeyPassphrase ?? "", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
+                clientCerts.Import(PEMCertificate, clientPrivateKeyPassphrase ?? "", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
+
+                // assert CA certs in cert store, and get root CA 
+                var rootCertificate = AssertCertsInStore(clientCerts);
+
+                InitializeClient(clientCerts, rootCertificate);
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+
+        }
+
+        private void InitializeClient(X509Certificate2Collection clientCerts, X509Certificate2 rootCertificate)
+        {
             var handler = new HttpClientHandler();
             handler.ClientCertificates.AddRange(clientCerts);
 
             handler.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
-            
+
             handler.ServerCertificateCustomValidationCallback = (sender, certificate, chain, errors) =>
             {
                 // for some reason, extracted test root certificate is not equal to the MSS server certificate
@@ -74,7 +112,7 @@ namespace SwishClient
 
                 //return c.Equals(rootCertificate);
             };
-            
+
             _client = new HttpClient(handler);
         }
 
@@ -183,11 +221,22 @@ namespace SwishClient
         public async Task<PaymentStatusModel> GetPaymentStatus(string id)
         {
             var uri = $"{_paymentRequestsPath}/{id}";
-            var response = await Get(uri).ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-            var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-            return JsonConvert.DeserializeObject<PaymentStatusModel>(responseContent);
+            try
+            {
+
+                var response = await Get(uri).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+                var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                return JsonConvert.DeserializeObject<PaymentStatusModel>(responseContent);
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
+
         }
 
         /// <summary>

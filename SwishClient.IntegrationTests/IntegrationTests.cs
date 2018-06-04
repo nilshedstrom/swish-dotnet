@@ -38,7 +38,7 @@ namespace SwishClient.IntegrationTests
             var paymentResponse = await client.MakeECommercePaymentAsync(ecommercePaymentModel);
 
             // Wait so that the payment request has been processed
-            Thread.Sleep(5000);
+            await Task.Delay(5000);
 
             // Check payment request status
             var paymentStatus = await client.GetPaymentStatus(paymentResponse.Id);
@@ -58,7 +58,7 @@ namespace SwishClient.IntegrationTests
             var refundResponse = await client.MakeRefundAsync(refundModel);
 
             // Wait so that the refund request has been processed
-            Thread.Sleep(10000);
+            await Task.Delay(10000);
 
             // Check refund request status
             var refundStatus = await client.GetRefundStatus(refundResponse.Id);
@@ -84,7 +84,7 @@ namespace SwishClient.IntegrationTests
             var paymentResponse = await client.MakeMCommercePaymentAsync(mcommercePaymentModel);
 
             // Wait so that the payment request has been processed
-            Thread.Sleep(5000);
+            await Task.Delay(5000);
 
             // Check payment request status
             var paymentStatus = await client.GetPaymentStatus(paymentResponse.Id);
@@ -104,7 +104,7 @@ namespace SwishClient.IntegrationTests
             var refundResponse = await client.MakeRefundAsync(refundModel);
 
             // Wait so that the refund request has been processed
-            Thread.Sleep(10000);
+            await Task.Delay(10000);
 
             // Check refund request status
             var refundStatus = await client.GetRefundStatus(refundResponse.Id);
