@@ -8,11 +8,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SwishClient", "SwishClient\SwishClient.csproj", "{9C0B6408-9078-470A-AB81-09937CBBE753}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Swish", "SwishClient\Swish.csproj", "{9C0B6408-9078-470A-AB81-09937CBBE753}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SwishClient.IntegrationTests", "SwishClient.IntegrationTests\SwishClient.IntegrationTests.csproj", "{EC1FCE83-1AC2-4A4F-96A1-E46028B59C9A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Swish.IntegrationTests", "SwishClient.IntegrationTests\Swish.IntegrationTests.csproj", "{EC1FCE83-1AC2-4A4F-96A1-E46028B59C9A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SwishClient.UnitTests", "SwishClient.UnitTests\SwishClient.UnitTests.csproj", "{A9D55AAE-22D6-4986-9ECA-2F1D6B32E933}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Swish.UnitTests", "SwishClient.UnitTests\Swish.UnitTests.csproj", "{A9D55AAE-22D6-4986-9ECA-2F1D6B32E933}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

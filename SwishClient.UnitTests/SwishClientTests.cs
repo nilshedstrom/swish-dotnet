@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Xunit;
 
-namespace SwishClient.UnitTests
+namespace Swish.UnitTests
 {
     public class SwishClientTests
     {

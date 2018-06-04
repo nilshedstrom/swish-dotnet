@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace SwishClient
+namespace Swish
 {
     /// <summary>
     /// Swish client
@@ -26,7 +26,7 @@ namespace SwishClient
             get
             {
                 return Environment == SwishEnvironment.Production ?
-                    "https://swicpc.bankgirot.se/swish-cpcapi/api/v1/" :
+                    "https://cpc.getswish.net/swish-cpcapi/api/v1/paymentrequests" :
                     "https://mss.swicpc.bankgirot.se/swish-cpcapi/api/v1/paymentrequests/";
             }
         }
@@ -35,7 +35,7 @@ namespace SwishClient
             get
             {
                 return Environment == SwishEnvironment.Production ?
-                    "https://swicpc.bankgirot.se/swish-cpcapi/api/v1/" :
+                    "https://cpc.getswish.net/swish-cpcapi/api/v1/refunds" :
                     "https://mss.swicpc.bankgirot.se/swish-cpcapi/api/v1/refunds/";
             }
         }
@@ -62,44 +62,24 @@ namespace SwishClient
             InitializeClient(clientCerts, rootCertificate);
         }
 
-        /// <summary>
-        /// Default constructor
-        /// </summary>
-        /// <param name="environment">Swish environment to use</param>
-        /// <param name="clientCertData">The client P12 certificate</param>
-        /// <param name="clientCertPassword">Password for certificate collection (can be null)</param>
-        /// <param name="merchantId">Swish Merchant ID</param>
-        public SwishClient(SwishEnvironment environment, byte[] PEMCertificate, byte[] clientPrivateKey, string clientPrivateKeyPassphrase,  string merchantId)
-        {
-
-            Environment = environment;
-            MerchantId = merchantId;
-            try
-            {
-                var clientCerts = new X509Certificate2Collection();
-                clientCerts.Import(clientPrivateKey, clientPrivateKeyPassphrase ?? "", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
-                clientCerts.Import(PEMCertificate, clientPrivateKeyPassphrase ?? "", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
-
-                // assert CA certs in cert store, and get root CA 
-                var rootCertificate = AssertCertsInStore(clientCerts);
-
-                InitializeClient(clientCerts, rootCertificate);
-            }
-            catch (Exception ex)
-            {
-
-                throw;
-            }
-
-        }
-
         private void InitializeClient(X509Certificate2Collection clientCerts, X509Certificate2 rootCertificate)
         {
             var handler = new HttpClientHandler();
             handler.ClientCertificates.AddRange(clientCerts);
 
-            handler.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
+            try
+            {
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                ServicePointManager.Expect100Continue = true;
+            }
+            catch  { }
 
+            try
+            {
+                handler.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
+            }
+            catch { }
+            
             handler.ServerCertificateCustomValidationCallback = (sender, certificate, chain, errors) =>
             {
                 // for some reason, extracted test root certificate is not equal to the MSS server certificate
@@ -208,6 +188,32 @@ namespace SwishClient
             {
                 throw new HttpRequestException(responseContent);
             }
+
+            /*
+            Potential Http status codes returned:
+            201 Created: Returned when Payment request was successfully created. Will return a Location header and if it is Swish m-commerce case, it will also return PaymentRequestToken header.
+            400 Bad Request: Returned when the Create Payment Request operation was malformed.
+            401 Unauthorized: Returned when there are authentication problems with the certificate. Or the Swish number in the certificate is not enrolled. Will return nothing else.
+            403 Forbidden: Returned when the payeeAlias in the payment request object is not the same as merchant’s Swish number.
+            415 Unsupported Media Type: Returned when Content-Type header is not “application/json”. Will return nothing else.
+            422 Unprocessable Entity: Returned when there are validation errors. Will return an Array of Error Objects.
+            500 Internal Server Error: Returned if there was some unknown/unforeseen error that occurred on the server, this should normally not happen. Will return nothing else.
+            Potential Error codes returned on Error Objects when validation fails (HTTP status code 422 is returned):
+            FF08 – PaymentReference is invalid
+            RP03 – Callback URL is missing or does not use Https
+            BE18 – Payer alias is invalid
+            RP01 – Missing Merchant Swish Number
+            PA02 – Amount value is missing or not a valid number
+            AM06 – Specified transaction amount is less than agreed minimum
+            AM02 – Amount value is too large
+            AM03 – Invalid or missing Currency
+            RP02 – Wrong formated message
+            RP06 – A payment request already exist for that payer. Only applicable for Swish ecommerce.
+            ACMT03 – Payer not Enrolled
+            ACMT01 – Counterpart is not activated
+            ACMT07 – Payee not Enrolled
+             */
+
             response.EnsureSuccessStatusCode();
 
             return ExtractMCommerceResponse(response);
@@ -222,21 +228,19 @@ namespace SwishClient
         {
             var uri = $"{_paymentRequestsPath}/{id}";
 
-            try
-            {
+            var response = await Get(uri).ConfigureAwait(false);
 
-                var response = await Get(uri).ConfigureAwait(false);
-                response.EnsureSuccessStatusCode();
-                var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            /*
+            200 OK: Returned when Payment request was found. Will return Payment Request Object.
+            401 Unauthorized: Returned when there are authentication problems with the certificate. Or the Swish number in the certificate is not enrolled. Will return nothing else.
+            404 Not found: Returned when the Payment request was not found or it was not created by the merchant. Will return nothing else.
+            500 Internal Server Error: Returned if there was some unknown/unforeseen error that occurred on the server, this should normally not happen. Will return nothing else.
+            */
 
-                return JsonConvert.DeserializeObject<PaymentStatusModel>(responseContent);
-            }
-            catch (Exception ex)
-            {
+            response.EnsureSuccessStatusCode();
+            var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                throw;
-            }
-
+            return JsonConvert.DeserializeObject<PaymentStatusModel>(responseContent);
         }
 
         /// <summary>

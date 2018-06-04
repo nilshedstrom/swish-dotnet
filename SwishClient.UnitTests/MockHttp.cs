@@ -2,7 +2,7 @@
 using System.Net;
 using System.Net.Http;
 
-namespace SwishClient.UnitTests
+namespace Swish.UnitTests
 {
     public class MockHttp : HttpClient
     {

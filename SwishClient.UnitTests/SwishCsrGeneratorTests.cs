@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Xunit;
 
-namespace SwishClient.UnitTests
+namespace Swish.UnitTests
 {
     public class SwishCsrGeneratorTests
     {
@@ -12,7 +12,7 @@ namespace SwishClient.UnitTests
         {
             var certificateSubjectText = "CN=Magnet, C=NL";
 
-            var generator = new SwishCsrGenerator();
+            var generator = new CertificateGenerator();
 
             var keypair = generator.GenerateKeyPair();
 

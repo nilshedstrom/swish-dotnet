@@ -5,37 +5,32 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace SwishClient.IntegrationTests
+namespace Swish.IntegrationTests
 {
     public class IntegrationProdTests
     {
         private readonly byte[] _merchantCertificateDataInPEM;
-        private readonly byte[] _merchantPrivateKey;
+        private readonly string _merchantPrivateKey;
         private readonly string _merchantCertificatePassword;
         private readonly string _merchantId;
 
         public IntegrationProdTests()
         {
             _merchantCertificateDataInPEM = System.IO.File.ReadAllBytes("certificates/prod.pem");
-            _merchantPrivateKey = System.IO.File.ReadAllBytes("certificates/private.key");
+            _merchantPrivateKey = System.IO.File.ReadAllText("certificates/private.key");
             _merchantCertificatePassword = "";
             _merchantId = "test";
         }
 
+
         [Fact]
-        public async Task CertificateAcceptedTest()
+        public async Task CertificateAcceptedTest2()
         {
-            var client = new SwishClient(
-                environment: SwishEnvironment.Production,
-                PEMCertificate: _merchantCertificateDataInPEM,
-                clientPrivateKey: _merchantPrivateKey,
-                clientPrivateKeyPassphrase: _merchantCertificatePassword,
-                merchantId: _merchantId);
+            var bytes = CertificateGenerator.GenerateP12(_merchantPrivateKey, _merchantCertificateDataInPEM, "");
 
-            // Just check the status of random ID, we just need to check that the connection is working
+            var client = new SwishClient(SwishEnvironment.Production, P12CertificateCollection: bytes, P12CertificateCollectionPassphrase: "", merchantId: "123");
+
             var paymentStatus = await client.GetPaymentStatus("test");
-            
         }
-
     }
 }

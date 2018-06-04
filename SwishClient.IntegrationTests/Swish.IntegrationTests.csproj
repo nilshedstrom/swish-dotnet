@@ -1,9 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
+
+    <AssemblyName>Swish.IntegrationTests</AssemblyName>
+
+    <RootNamespace>Swish.IntegrationTests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,11 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SwishClient\SwishClient.csproj" />
+    <Folder Include="certificates\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="certificates\" />
+    <ProjectReference Include="..\SwishClient\Swish.csproj" />
   </ItemGroup>
 
   <ItemGroup>

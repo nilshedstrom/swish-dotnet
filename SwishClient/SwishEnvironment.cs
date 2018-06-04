@@ -1,4 +1,4 @@
-﻿namespace SwishClient
+﻿namespace Swish
 {
     public enum SwishEnvironment
     {

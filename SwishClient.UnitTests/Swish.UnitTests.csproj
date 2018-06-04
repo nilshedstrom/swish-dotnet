@@ -4,6 +4,10 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
+
+    <AssemblyName>Swish.UnitTests</AssemblyName>
+
+    <RootNamespace>Swish.UnitTests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SwishClient\SwishClient.csproj" />
+    <ProjectReference Include="..\SwishClient\Swish.csproj" />
   </ItemGroup>
 
 </Project>
