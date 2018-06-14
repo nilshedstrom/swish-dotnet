@@ -79,49 +79,6 @@ namespace Swish
             return (privateKeyText, csrText);
         }
 
-        /*
-        public byte[] GenerateP12(byte[] privateKey, byte[] pemCertificate, string passphrase)
-        {
-            byte[] mergedData = new byte[privateKey.Length + pemCertificate.Length];
-            Buffer.BlockCopy(privateKey, 0, mergedData, 0, privateKey.Length);
-            Buffer.BlockCopy(pemCertificate, 0, mergedData, privateKey.Length, pemCertificate.Length);
-
-            var privateKeyStream = new MemoryStream(mergedData);
-
-            StreamReader sr = new StreamReader(privateKeyStream);
-
-            IPasswordFinder passwordFinder = new PasswordStore(passphrase.ToCharArray());
-
-            PemReader pemReader = new PemReader(sr, passwordFinder);
-
-            Pkcs12Store store = new Pkcs12StoreBuilder().Build();
-            X509CertificateEntry[] chain = new X509CertificateEntry[1];
-            AsymmetricCipherKeyPair privKey = null;
-
-            object o;
-            while ((o = pemReader.ReadObject()) != null)
-            {
-                if (o is X509CertificateEntry)
-                {
-                    chain[0] = new X509CertificateEntry((X509Certificate)o);
-                }
-                else if (o is AsymmetricCipherKeyPair)
-                {
-                    privKey = (AsymmetricCipherKeyPair)o;
-                }
-            }
-
-            store.SetKeyEntry(passphrase, new AsymmetricKeyEntry(privKey.Private), chain);
-
-            var outputStream = new MemoryStream();
-
-            store.Save(outputStream, passphrase.ToCharArray(), new SecureRandom());
-
-            var bytes = outputStream.ToArray();
-
-            return bytes;
-        }*/
-
         public static byte[] GenerateP12(string privateKey, byte[] pemCertificate, string password)
         {
             var rng = new SecureRandom();
@@ -149,46 +106,6 @@ namespace Swish
             pkcs12Store.Save(memoryStream, null, rng);
 
             return memoryStream.ToArray();
-        }
-        
-        public static byte[] GenerateP122(string privateKey, byte[] pemCertificate, string password)
-        {
-            CryptoApiRandomGenerator rg = new CryptoApiRandomGenerator();
-            var rng = new SecureRandom(rg);
-            // get the cert
-            var parser = new X509CertificateParser();
-            var certCollection = parser.ReadCertificates(pemCertificate);
-            // get the key
-            Org.BouncyCastle.OpenSsl.PemReader pemReader =
-            new Org.BouncyCastle.OpenSsl.PemReader(new StringReader(privateKey));
-            AsymmetricCipherKeyPair kp = pemReader.ReadObject() as AsymmetricCipherKeyPair;
-
-            // Put the key and cert in an PKCS12 store so that the WIndows TLS stack can use it
-            var store = new Pkcs12Store();
-
-            // todo: remove dependency on certificate position, somehow find where the client cert is and apply key there
-            var keySet = false;
-            foreach (var cert in certCollection)
-            {
-                var c = cert as X509Certificate;
-                var friendlyName = c.SubjectDN.ToString();
-                var entry = new X509CertificateEntry(c);
-
-                store.SetCertificateEntry(friendlyName, entry);
-
-                if (!keySet)
-                {
-                    store.SetKeyEntry(friendlyName, new AsymmetricKeyEntry(kp.Private), new[] { entry });
-                    keySet = true;
-                } 
-            }
-
-            //store.SetKeyEntry(password, new AsymmetricKeyEntry(kp.Private), chain);
-            var stream = new MemoryStream();
-            var pwd = password?.ToCharArray();
-            store.Save(stream, pwd, rng);
-
-            return stream.ToArray();
         }
     }
 }
