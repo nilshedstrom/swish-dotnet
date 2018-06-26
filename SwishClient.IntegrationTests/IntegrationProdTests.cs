@@ -21,16 +21,35 @@ namespace Swish.IntegrationTests
             _merchantCertificatePassword = "";
             _merchantId = "test";
         }
-
-
+        
         [Fact]
         public async Task CertificateAcceptedTest2()
         {
             var bytes = CertificateGenerator.GenerateP12(_merchantPrivateKey, _merchantCertificateDataInPEM, "");
 
-            var client = new SwishClient(SwishEnvironment.Production, P12CertificateCollection: bytes, P12CertificateCollectionPassphrase: "", merchantId: "123");
+            var client = new SwishClient(SwishEnvironment.Production, P12CertificateCollectionBytes: bytes, P12CertificateCollectionPassphrase: "", merchantId: "123");
 
             var paymentStatus = await client.GetPaymentStatus("test");
+        }
+        
+        [Fact]
+        public async Task CertificateAcceptedTest23()
+        {
+            var bytes = CertificateGenerator.GenerateP12(_merchantPrivateKey, _merchantCertificateDataInPEM, "");
+
+            var client = new SwishClient(SwishEnvironment.Production,
+                P12CertificateCollectionBytes: bytes,
+                P12CertificateCollectionPassphrase: "",
+                merchantId: "123");
+
+            var paymentStatus = await client.GetPaymentStatus("test");
+            
+            var client2 = new SwishClient(SwishEnvironment.Production,
+                P12CertificateCollectionBytes: bytes,
+                P12CertificateCollectionPassphrase: "",
+                merchantId: "123");
+            
+            var paymentStatus2 = await client2.GetPaymentStatus("test");
         }
     }
 }

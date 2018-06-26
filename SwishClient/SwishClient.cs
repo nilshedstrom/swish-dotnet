@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -8,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Org.BouncyCastle.Pkcs;
 
 namespace Swish
 {
@@ -42,29 +44,42 @@ namespace Swish
         }
 
         /// <summary>
-        /// Default constructor
+        /// Initializes the swish client with initialized HttpClient 
+        /// Only for testing purposes!
         /// </summary>
-        /// <param name="environment">Swish environment to use</param>
-        /// <param name="P12CertificateCollection">The client P12 certificate</param>
-        /// <param name="P12CertificateCollectionPassphrase">Password for certificate collection (can be null)</param>
-        /// <param name="merchantId">Swish Merchant ID</param>
-        public SwishClient(SwishEnvironment environment, byte[] P12CertificateCollection, string P12CertificateCollectionPassphrase, string merchantId)
+        /// <param name="httpClient">Initialized/mocked HttpClient</param>
+        /// <param name="merchantId">Merchant Id</param>
+        /// <param name="environment">Swish env to use</param>
+        public SwishClient(HttpClient httpClient, string merchantId, SwishEnvironment environment = SwishEnvironment.Test)
         {
             Environment = environment;
             MerchantId = merchantId;
-            
-            var clientCerts = new X509Certificate2Collection();
-            clientCerts.Import(P12CertificateCollection, P12CertificateCollectionPassphrase ?? "", X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
-
-            // assert CA certs in cert store, and get root CA 
-            var rootCertificate = AssertCertsInStore(clientCerts);
-
-            InitializeClient(clientCerts, rootCertificate);
+            _client = httpClient;
         }
 
-        private void InitializeClient(X509Certificate2Collection clientCerts, X509Certificate2 rootCertificate)
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        /// <param name="environment">Swish environment to use</param>
+        /// <param name="P12CertificateCollectionBytes">The client P12 certificate as a byte array</param>
+        /// <param name="P12CertificateCollectionPassphrase">Password for certificate collection (can be null)</param>
+        /// <param name="merchantId">Swish Merchant ID</param>
+        public SwishClient(SwishEnvironment environment, byte[] P12CertificateCollectionBytes, string P12CertificateCollectionPassphrase, string merchantId)
         {
+            Environment = environment;
+            MerchantId = merchantId;
+
+
+            var pkcs12Store = new Pkcs12Store(
+                new MemoryStream(P12CertificateCollectionBytes),
+                P12CertificateCollectionPassphrase.ToCharArray());
+            
+
+            var clientCerts = new X509Certificate2Collection();
+            clientCerts.Import(P12CertificateCollectionBytes, P12CertificateCollectionPassphrase ?? "", X509KeyStorageFlags.Exportable);
+
             var handler = new HttpClientHandler();
+            handler.ClientCertificateOptions = ClientCertificateOption.Manual;
             handler.ClientCertificates.AddRange(clientCerts);
 
             try
@@ -72,14 +87,17 @@ namespace Swish
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                 ServicePointManager.Expect100Continue = true;
             }
-            catch  { }
+            catch { }
 
             try
             {
-                handler.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
+                handler.SslProtocols = SslProtocols.Tls12;
             }
             catch { }
-            
+
+            // assert CA certs in cert store, and get root CA 
+            // var rootCertificate = AssertCertsInStore(clientCerts);
+
             handler.ServerCertificateCustomValidationCallback = (sender, certificate, chain, errors) =>
             {
                 // for some reason, extracted test root certificate is not equal to the MSS server certificate
@@ -141,18 +159,7 @@ namespace Swish
             return caCerts.LastOrDefault();
         }
 
-        /// <summary>
-        /// Initializes the swish client with initialized HttpClient 
-        /// Only for testing purposes!
-        /// </summary>
-        /// <param name="httpClient">Initialized/mocked HttpClient</param>
-        /// <param name="merchantId">Merchant Id</param>
-        public SwishClient(HttpClient httpClient, string merchantId)
-        {
-            Environment = SwishEnvironment.Test;
-            MerchantId = merchantId;
-            _client = httpClient;
-        }
+
 
         /// <summary>
         /// Makes a swish payment via the e-commerce flow

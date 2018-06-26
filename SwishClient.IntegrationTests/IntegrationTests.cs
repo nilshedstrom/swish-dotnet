@@ -65,7 +65,6 @@ namespace Swish.IntegrationTests
             Assert.Equal("PAID", refundStatus.Status);
         }
 
-
         [Fact]
         public async Task MCommerceScenario()
         {
@@ -100,7 +99,7 @@ namespace Swish.IntegrationTests
             {
                 PayerPaymentReference = "0123456789",
                 Message = "Refund for Kingston USB Flash Drive 8 GB"
-            }; ;
+            };
             var refundResponse = await client.MakeRefundAsync(refundModel);
 
             // Wait so that the refund request has been processed
