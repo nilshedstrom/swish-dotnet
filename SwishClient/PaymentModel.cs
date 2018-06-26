@@ -10,7 +10,6 @@ namespace Swish
 
         public string CallbackUrl { get; protected set; }
 
-
         public string Amount { get; protected set; }
 
         public string Currency { get; protected set; }

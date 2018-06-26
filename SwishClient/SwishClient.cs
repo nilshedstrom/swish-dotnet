@@ -30,6 +30,7 @@ namespace Swish
                     "https://mss.swicpc.bankgirot.se/swish-cpcapi/api/v1/paymentrequests/";
             }
         }
+
         private string _refundsPath
         {
             get
@@ -40,13 +41,12 @@ namespace Swish
             }
         }
 
-
         /// <summary>
         /// Default constructor
         /// </summary>
         /// <param name="environment">Swish environment to use</param>
-        /// <param name="clientCertData">The client P12 certificate</param>
-        /// <param name="clientCertPassword">Password for certificate collection (can be null)</param>
+        /// <param name="P12CertificateCollection">The client P12 certificate</param>
+        /// <param name="P12CertificateCollectionPassphrase">Password for certificate collection (can be null)</param>
         /// <param name="merchantId">Swish Merchant ID</param>
         public SwishClient(SwishEnvironment environment, byte[] P12CertificateCollection, string P12CertificateCollectionPassphrase, string merchantId)
         {
@@ -113,7 +113,7 @@ namespace Swish
 
             chain.ChainPolicy.ExtraStore.AddRange(certArr.Where(o => !o.HasPrivateKey).ToArray());
 
-            var privateCert = certArr.FirstOrDefault(o => o.HasPrivateKey);
+            var privateCert = Array.Find(certArr, o => o.HasPrivateKey);
 
             if (privateCert == null) return null;
 
@@ -275,7 +275,7 @@ namespace Swish
             return JsonConvert.DeserializeObject<RefundStatusModel>(responseContent);
         }
 
-        private SwishApiResponse ExtractSwishResponse(HttpResponseMessage responseMessage)
+        private static SwishApiResponse ExtractSwishResponse(HttpResponseMessage responseMessage)
         {
             var location = responseMessage.Headers.GetValues("Location").FirstOrDefault();
             var swishResponse = new ECommercePaymentResponse();

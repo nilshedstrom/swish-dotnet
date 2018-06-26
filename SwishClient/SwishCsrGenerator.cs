@@ -16,7 +16,7 @@ namespace Swish
 {
     class PasswordStore : IPasswordFinder
     {
-        private char[] password;
+        private readonly char[] password;
 
         public PasswordStore(char[] password)
         {
@@ -35,13 +35,6 @@ namespace Swish
         private const int KEY_BITS = 4096;
 
         private readonly SecureRandom _random = new SecureRandom();
-
-        public void Generate(string certificateSubjectText = "CN=Magnet, C=NL")
-        {
-            var keypair = GenerateKeyPair();
-
-            var csr = GenerateCsr(keypair, certificateSubjectText);
-        }
 
         public AsymmetricCipherKeyPair GenerateKeyPair()
         {
@@ -89,7 +82,8 @@ namespace Swish
 
             PemReader pemReader = new PemReader(new StringReader(privateKey));
 
-            AsymmetricKeyParameter kp = (pemReader.ReadObject() as AsymmetricCipherKeyPair).Private;
+            var keypair = pemReader.ReadObject() as AsymmetricCipherKeyPair;
+            var privateKeyPart = keypair.Private;
 
             X509CertificateEntry[] certEntry = new X509CertificateEntry[certChain.Count];
 
@@ -100,8 +94,8 @@ namespace Swish
                 index++;
             }
 
-            pkcs12Store.SetKeyEntry(certEntry[0].Certificate.SubjectDN.ToString(), new AsymmetricKeyEntry(kp), certEntry);
-            
+            pkcs12Store.SetKeyEntry(certEntry[0].Certificate.SubjectDN.ToString(), new AsymmetricKeyEntry(privateKeyPart), certEntry);
+
             MemoryStream memoryStream = new MemoryStream();
             pkcs12Store.Save(memoryStream, null, rng);
 
