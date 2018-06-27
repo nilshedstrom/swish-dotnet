@@ -236,3 +236,5 @@ _Pvt_Extensions
 .fake/
 /SwishClient.IntegrationTests/certificates/prod.pem
 /SwishClient.IntegrationTests/certificates/private.key
+/SwishTestWebApp/App_Data/prod.pem
+/SwishTestWebApp/App_Data/private.key

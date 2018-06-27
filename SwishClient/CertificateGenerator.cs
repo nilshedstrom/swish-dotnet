@@ -30,6 +30,13 @@ namespace Swish
 
     }
 
+    public class CsrResult
+    {
+        public string PrivateKeyAsPem;
+        public string CsrAsPem;
+
+    }
+
     public class CertificateGenerator
     {
         private const int KEY_BITS = 4096;
@@ -45,7 +52,7 @@ namespace Swish
             return rkpg.GenerateKeyPair();
         }
 
-        public (string privateKeyAsPem, string csrAsPem) GenerateCsr(AsymmetricCipherKeyPair keypair, string certificateSubjectText)
+        public CsrResult GenerateCsr(AsymmetricCipherKeyPair keypair, string certificateSubjectText)
         {
             //PKCS #10 Certificate Signing Request
             var signatureFactory = new Asn1SignatureFactory("SHA1WITHRSA", keypair.Private, _random);
@@ -69,7 +76,7 @@ namespace Swish
             //Push the private key text
             var privateKeyText = privateKeyPem.ToString();
 
-            return (privateKeyText, csrText);
+            return new CsrResult() { PrivateKeyAsPem = privateKeyText, CsrAsPem = csrText };
         }
 
         public static byte[] GenerateP12(string privateKey, byte[] pemCertificate, string password)

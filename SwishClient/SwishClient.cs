@@ -9,10 +9,17 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Pkcs;
 
 namespace Swish
 {
+    public enum SwishEnvironment
+    {
+        Test,
+        Production
+    }
+
     /// <summary>
     /// Swish client
     /// </summary>
@@ -68,7 +75,9 @@ namespace Swish
         {
             Environment = environment;
             MerchantId = merchantId;
-            /*
+
+            var handler = new HttpClientHandler();
+            handler.ClientCertificateOptions = ClientCertificateOption.Manual;
             var pkcs12Store = new Pkcs12Store(
                 new MemoryStream(P12CertificateCollectionBytes),
                 P12CertificateCollectionPassphrase.ToCharArray());
@@ -79,20 +88,36 @@ namespace Swish
             
             var chain = pkcs12Store.GetCertificateChain(alias);
 
+            var privateKey = pkcs12Store.GetKey(alias);
+
             foreach (var cert in chain)
             {
+                var c = Org.BouncyCastle.Security.DotNetUtilities.ToX509Certificate(cert.Certificate.CertificateStructure);
 
-            }*/
+                var c2 = new X509Certificate2(c);
+                try
+                {
 
-            
+
+                    c2.PrivateKey = Org.BouncyCastle.Security.DotNetUtilities.ToRSA(privateKey.Key as RsaPrivateCrtKeyParameters);
+
+                }
+                catch 
+                {
+                    
+                }
+
+                handler.ClientCertificates.Add(c2);
+            }
+
+            /**
             var clientCerts = new X509Certificate2Collection();
-            clientCerts.Import(P12CertificateCollectionBytes, P12CertificateCollectionPassphrase ?? "", X509KeyStorageFlags.Exportable);
-            
-
-
+            clientCerts. .Import(P12CertificateCollectionBytes, P12CertificateCollectionPassphrase ?? "", X509KeyStorageFlags);
+            */
+            /*
             var handler = new HttpClientHandler();
             handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-            handler.ClientCertificates.AddRange(clientCerts);
+            handler.ClientCertificates.AddRange(clientCerts);*/
 
             try
             {
@@ -110,7 +135,7 @@ namespace Swish
             // assert CA certs in cert store, and get root CA 
             // var rootCertificate = AssertCertsInStore(clientCerts);
 
-            handler.ServerCertificateCustomValidationCallback = (sender, certificate, chain, errors) =>
+            handler.ServerCertificateCustomValidationCallback = (_, __, ___, ____) =>
             {
                 // for some reason, extracted test root certificate is not equal to the MSS server certificate
                 // so for now, accept all server certificates
@@ -253,7 +278,7 @@ namespace Swish
                 case HttpStatusCode.Unauthorized:
                     return new PaymentStatusModel()
                     {
-                        ErrorMessage = "Unauthorized: There are authentication problems with the certificate. Or the Swish number in the certificate is not enrolled."
+                        ErrorMessage = "Unauthorized: There are authentication problems with the certificate. Or the Swish number in the certificate is not enrolled.",
                     };
                 case HttpStatusCode.NotFound:
                     return new PaymentStatusModel()

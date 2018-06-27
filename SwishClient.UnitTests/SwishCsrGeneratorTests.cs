@@ -18,8 +18,8 @@ namespace Swish.UnitTests
 
             var csr = generator.GenerateCsr(keypair, certificateSubjectText);
 
-            Assert.NotNull(csr.csrAsPem);
-            Assert.NotNull(csr.privateKeyAsPem);
+            Assert.NotNull(csr.CsrAsPem);
+            Assert.NotNull(csr.PrivateKeyAsPem);
         }
     }
 }
