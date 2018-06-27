@@ -75,49 +75,43 @@ namespace Swish
         {
             Environment = environment;
             MerchantId = merchantId;
-
-            var handler = new HttpClientHandler();
-            handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-            var pkcs12Store = new Pkcs12Store(
-                new MemoryStream(P12CertificateCollectionBytes),
-                P12CertificateCollectionPassphrase.ToCharArray());
-
-            var aliasesEnumerator = pkcs12Store.Aliases.GetEnumerator();
-            aliasesEnumerator.MoveNext();
-            var alias = aliasesEnumerator.Current as string;
-            
-            var chain = pkcs12Store.GetCertificateChain(alias);
-
-            var privateKey = pkcs12Store.GetKey(alias);
-
-            foreach (var cert in chain)
-            {
-                var c = Org.BouncyCastle.Security.DotNetUtilities.ToX509Certificate(cert.Certificate.CertificateStructure);
-
-                var c2 = new X509Certificate2(c);
-                try
-                {
-
-
-                    c2.PrivateKey = Org.BouncyCastle.Security.DotNetUtilities.ToRSA(privateKey.Key as RsaPrivateCrtKeyParameters);
-
-                }
-                catch 
-                {
-                    
-                }
-
-                handler.ClientCertificates.Add(c2);
-            }
-
-            /**
-            var clientCerts = new X509Certificate2Collection();
-            clientCerts. .Import(P12CertificateCollectionBytes, P12CertificateCollectionPassphrase ?? "", X509KeyStorageFlags);
-            */
             /*
+                        var handler = new HttpClientHandler();
+                        handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+
+                        var pkcs12Store = new Pkcs12Store(
+                            new MemoryStream(P12CertificateCollectionBytes),
+                            P12CertificateCollectionPassphrase.ToCharArray());
+
+                        var aliasesEnumerator = pkcs12Store.Aliases.GetEnumerator();
+                        aliasesEnumerator.MoveNext();
+                        var alias = aliasesEnumerator.Current as string;
+
+                        var chain = pkcs12Store.GetCertificateChain(alias);
+
+                        var privateKey = pkcs12Store.GetKey(alias);
+
+                        foreach (var cert in chain)
+                        {
+                            var c = Org.BouncyCastle.Security.DotNetUtilities.ToX509Certificate(cert.Certificate.CertificateStructure);
+
+                            var c2 = new X509Certificate2(c);
+                            try
+                            {
+                                c2.PrivateKey = Org.BouncyCastle.Security.DotNetUtilities.ToRSA(privateKey.Key as RsaPrivateCrtKeyParameters);
+                            }
+                            catch { }
+
+                            handler.ClientCertificates.Add(c2);
+                        }
+                        */
+
+            var clientCerts = new X509Certificate2Collection();
+            clientCerts.Import(P12CertificateCollectionBytes, P12CertificateCollectionPassphrase ?? "", X509KeyStorageFlags.Exportable);
+
             var handler = new HttpClientHandler();
             handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-            handler.ClientCertificates.AddRange(clientCerts);*/
+            handler.ClientCertificates.AddRange(clientCerts);
 
             try
             {
