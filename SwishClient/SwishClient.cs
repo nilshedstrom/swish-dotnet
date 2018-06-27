@@ -68,15 +68,27 @@ namespace Swish
         {
             Environment = environment;
             MerchantId = merchantId;
-
-
+            /*
             var pkcs12Store = new Pkcs12Store(
                 new MemoryStream(P12CertificateCollectionBytes),
                 P12CertificateCollectionPassphrase.ToCharArray());
-            
 
+            var aliasesEnumerator = pkcs12Store.Aliases.GetEnumerator();
+            aliasesEnumerator.MoveNext();
+            var alias = aliasesEnumerator.Current as string;
+            
+            var chain = pkcs12Store.GetCertificateChain(alias);
+
+            foreach (var cert in chain)
+            {
+
+            }*/
+
+            
             var clientCerts = new X509Certificate2Collection();
             clientCerts.Import(P12CertificateCollectionBytes, P12CertificateCollectionPassphrase ?? "", X509KeyStorageFlags.Exportable);
+            
+
 
             var handler = new HttpClientHandler();
             handler.ClientCertificateOptions = ClientCertificateOption.Manual;
@@ -158,9 +170,7 @@ namespace Swish
             //Return last CA in chain (root CA) 
             return caCerts.LastOrDefault();
         }
-
-
-
+        
         /// <summary>
         /// Makes a swish payment via the e-commerce flow
         /// </summary>
@@ -220,6 +230,7 @@ namespace Swish
             ACMT01 – Counterpart is not activated
             ACMT07 – Payee not Enrolled
              */
+            // TODO: handle error codes like in the GetPaymentStatus(...) method
 
             response.EnsureSuccessStatusCode();
 
@@ -237,13 +248,27 @@ namespace Swish
 
             var response = await Get(uri).ConfigureAwait(false);
 
-            /*
-            200 OK: Returned when Payment request was found. Will return Payment Request Object.
-            401 Unauthorized: Returned when there are authentication problems with the certificate. Or the Swish number in the certificate is not enrolled. Will return nothing else.
-            404 Not found: Returned when the Payment request was not found or it was not created by the merchant. Will return nothing else.
-            500 Internal Server Error: Returned if there was some unknown/unforeseen error that occurred on the server, this should normally not happen. Will return nothing else.
-            */
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.Unauthorized:
+                    return new PaymentStatusModel()
+                    {
+                        ErrorMessage = "Unauthorized: There are authentication problems with the certificate. Or the Swish number in the certificate is not enrolled."
+                    };
+                case HttpStatusCode.NotFound:
+                    return new PaymentStatusModel()
+                    {
+                        ErrorMessage = "NotFound: Payment request was not found or it was not created by the merchant."
+                    };
 
+                case HttpStatusCode.InternalServerError:
+                    return new PaymentStatusModel()
+                    {
+                        ErrorMessage = "InternalServerError: There was some unknown/unforeseen error that occurred on the server, this should normally not happen."
+                    };
+            }
+
+            // should be only OK here
             response.EnsureSuccessStatusCode();
             var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
