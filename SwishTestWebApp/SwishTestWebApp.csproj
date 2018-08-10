@@ -187,6 +187,9 @@
     <Content Include="App_Data\prod.pem">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="App_Data\prod2.pem">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="packages.config" />
     <Content Include="Views\Home\Wrong.cshtml" />
     <Content Include="Views\Home\Error.cshtml" />

@@ -110,9 +110,12 @@ namespace Swish
             clientCerts.Import(P12CertificateCollectionBytes, P12CertificateCollectionPassphrase ?? "", X509KeyStorageFlags.Exportable);
 
             var handler = new HttpClientHandler();
-            handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+            //handler.ClientCertificateOptions = ClientCertificateOption.Manual;
             handler.ClientCertificates.AddRange(clientCerts);
+            handler.Credentials = null;
 
+
+            //CredentialCache s = null;
             try
             {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
