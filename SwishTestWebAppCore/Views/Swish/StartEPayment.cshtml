@@ -1,0 +1,52 @@
+﻿@using Swish;
+@model ECommercePaymentResponse
+
+@{
+    ViewBag.Title = "Swish payment started";
+}
+
+<h2>Swish payment started</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th scope="row">Id</th>
+            <td><a href="/Swish/CheckPayment/@Model.Id">@Model.Id</a></td>
+        </tr>
+        <tr>
+            <th scope="row">Location</th>
+            <td><a href="/Swish/CheckPayment/@Model.Id">@Model.Location</a></td>
+        </tr>
+        <tr>
+            <th scope="row">Status</th>
+            <td id="PaymentPartial">
+                Getting status
+                <div class="spinner-border" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        $.ajax({
+            url: '/Swish/GetPaymentPartial/@Model.Id',
+            contentType: 'application/html; charset=utf-8',
+            type: 'GET',
+            dataType: 'html',
+            success: function(result) {
+                $('#PaymentPartial').html(result);
+            }
+        });
+    </script>
+
+}

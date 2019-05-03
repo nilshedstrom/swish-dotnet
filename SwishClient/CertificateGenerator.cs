@@ -87,7 +87,7 @@ namespace Swish
             var parser = new X509CertificateParser();
             var certChain = parser.ReadCertificates(pemCertificate);
 
-            PemReader pemReader = new PemReader(new StringReader(privateKey));
+            PemReader pemReader = new PemReader(new StringReader(privateKey), new PasswordStore(password.ToCharArray()));
 
             var keypair = pemReader.ReadObject() as AsymmetricCipherKeyPair;
             var privateKeyPart = keypair.Private;

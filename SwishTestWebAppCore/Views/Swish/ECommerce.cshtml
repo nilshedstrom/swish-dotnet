@@ -1,0 +1,28 @@
+﻿@using SwishTestWebAppCore.Models
+@model SwishTestWebAppCore.Models.EPaySwishViewModel
+
+@{
+    ViewData["Title"] = "Pay with Swish";
+}
+
+<h2>Pay with Swish(E-Commerce)</h2>
+<form asp-controller="Swish" asp-action="StartEPayment" method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <div class="form-group">
+        <label asp-for="PhoneNumber"></label>
+        <input asp-for="PhoneNumber" class="form-control" value="46701234567" />
+    </div>
+    <div class="form-group">
+        <label asp-for="Amount"></label>
+        <input asp-for="Amount" class="form-control" value="10" type="number" />
+    </div>
+    <div class="form-group">
+        <label asp-for="Message"></label>
+        <input asp-for="Message" class="form-control" value="Kingston USB Flash Drive 8 GB" />
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

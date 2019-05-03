@@ -45,20 +45,38 @@ namespace Swish
         public string PayerAlias { get; set; }
     }
 
+
+
     public class PaymentStatusModel : PaymentModel
     {
         public string Id { get; set; }
-
         public string PaymentReference { get; set; }
-
         public string Status { get; set; }
-
         public DateTime DateCreated { get; set; }
-
         public DateTime? DatePaid { get; set; }
-
         public string ErrorMessage { get; set; }
-
+        public string PayerAlias { get; set; }
+        public string ErrorCode { get; set; }
         public string AdditionalInformation { get; set; }
+
+        public new string CallbackUrl
+        {
+            get { return base.CallbackUrl; }
+            set { base.CallbackUrl = value; }
+        }
+
+        public new string Amount
+        {
+            get { return base.Amount; }
+            set { base.Amount = value; }
+        }
+
+        public new string Currency
+        {
+            get { return base.Currency; }
+            set { base.Currency = value; }
+        }
+
     }
+
 }

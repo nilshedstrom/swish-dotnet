@@ -1,0 +1,74 @@
+﻿@using Swish;
+@model PaymentStatusModel
+
+@{
+    ViewBag.Title = "Swish payment started";
+}
+
+<h2>Swish payment started</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th scope="row">Id</th>
+            <td>@Model.Id</td>
+        </tr>
+        <tr>
+            <th scope="row">PaymentReference</th>
+            <td>@Model.PaymentReference</td>
+        </tr>
+        <tr>
+            <th scope="row">PayeePaymentReference</th>
+            <td>@Model.PayeePaymentReference</td>
+        </tr>
+        <tr>
+            <th scope="row">Message</th>
+            <td>@Model.Message</td>
+        </tr>
+        <tr>
+            <th scope="row">Status</th>
+            <td>@Model.Status</td>
+        </tr>
+        <tr>
+            <th scope="row">DateCreated</th>
+            <td>@Model.DateCreated</td>
+        </tr>
+        <tr>
+            <th scope="row">DatePaid</th>
+            <td>@Model.DatePaid</td>
+        </tr>
+        <tr>
+            <th scope="row">PayerAlias</th>
+            <td>@Model.PayerAlias</td>
+        </tr>
+        <tr>
+            <th scope="row">CallbackUrl</th>
+            <td>@Model.CallbackUrl</td>
+        </tr>
+        <tr>
+            <th scope="row">Amount</th>
+            <td>@Model.Amount</td>
+        </tr>
+        <tr>
+            <th scope="row">Currency</th>
+            <td>@Model.Currency</td>
+        </tr>
+        <tr>
+            <th scope="row">ErrorMessage</th>
+            <td>@Model.ErrorMessage</td>
+        </tr>
+        <tr>
+            <th scope="row">ErrorCode</th>
+            <td>@Model.ErrorCode</td>
+        </tr>
+        <tr>
+            <th scope="row">AdditionalInformation</th>
+            <td>@Model.AdditionalInformation</td>
+        </tr>
+    </tbody>
+</table>

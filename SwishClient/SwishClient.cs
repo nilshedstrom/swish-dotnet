@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -11,6 +12,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Pkcs;
+using Org.BouncyCastle.Security;
 
 namespace Swish
 {
@@ -36,7 +38,7 @@ namespace Swish
             {
                 return Environment == SwishEnvironment.Production ?
                     "https://cpc.getswish.net/swish-cpcapi/api/v1/paymentrequests" :
-                    "https://mss.swicpc.bankgirot.se/swish-cpcapi/api/v1/paymentrequests/";
+                    "https://mss.cpc.getswish.net/swish-cpcapi/api/v1/paymentrequests/";
             }
         }
 
@@ -46,7 +48,7 @@ namespace Swish
             {
                 return Environment == SwishEnvironment.Production ?
                     "https://cpc.getswish.net/swish-cpcapi/api/v1/refunds" :
-                    "https://mss.swicpc.bankgirot.se/swish-cpcapi/api/v1/refunds/";
+                    "https://mss.cpc.getswish.net/swish-cpcapi/api/v1/refunds/";
             }
         }
 
@@ -75,124 +77,44 @@ namespace Swish
         {
             Environment = environment;
             MerchantId = merchantId;
-            /*
-                        var handler = new HttpClientHandler();
-                        handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-
-                        var pkcs12Store = new Pkcs12Store(
-                            new MemoryStream(P12CertificateCollectionBytes),
-                            P12CertificateCollectionPassphrase.ToCharArray());
-
-                        var aliasesEnumerator = pkcs12Store.Aliases.GetEnumerator();
-                        aliasesEnumerator.MoveNext();
-                        var alias = aliasesEnumerator.Current as string;
-
-                        var chain = pkcs12Store.GetCertificateChain(alias);
-
-                        var privateKey = pkcs12Store.GetKey(alias);
-
-                        foreach (var cert in chain)
-                        {
-                            var c = Org.BouncyCastle.Security.DotNetUtilities.ToX509Certificate(cert.Certificate.CertificateStructure);
-
-                            var c2 = new X509Certificate2(c);
-                            try
-                            {
-                                c2.PrivateKey = Org.BouncyCastle.Security.DotNetUtilities.ToRSA(privateKey.Key as RsaPrivateCrtKeyParameters);
-                            }
-                            catch { }
-
-                            handler.ClientCertificates.Add(c2);
-                        }
-                        */
-
             var clientCerts = new X509Certificate2Collection();
             clientCerts.Import(P12CertificateCollectionBytes, P12CertificateCollectionPassphrase ?? "", X509KeyStorageFlags.Exportable);
+            CreateClient(clientCerts);
+        }
 
+        public SwishClient(SwishEnvironment environment, X509Certificate2Collection certificates, string merchantId)
+        {
+            Environment = environment;
+            MerchantId = merchantId;
+            CreateClient(certificates);
+        }
+
+        private void CreateClient(X509Certificate2Collection clientCerts)
+        {
             var handler = new HttpClientHandler();
-            //handler.ClientCertificateOptions = ClientCertificateOption.Manual;
             handler.ClientCertificates.AddRange(clientCerts);
             handler.Credentials = null;
-
-
-            //CredentialCache s = null;
             try
             {
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                 ServicePointManager.Expect100Continue = true;
             }
-            catch { }
+            catch
+            {
+            }
 
             try
             {
                 handler.SslProtocols = SslProtocols.Tls12;
             }
-            catch { }
-
-            // assert CA certs in cert store, and get root CA 
-            // var rootCertificate = AssertCertsInStore(clientCerts);
-
-            handler.ServerCertificateCustomValidationCallback = (_, __, ___, ____) =>
+            catch
             {
-                // for some reason, extracted test root certificate is not equal to the MSS server certificate
-                // so for now, accept all server certificates
-                // this should be fixed in the future
-                return true;
-                //var x509ChainElement = chain.ChainElements.OfType<X509ChainElement>().LastOrDefault();
-                //if (x509ChainElement == null) return false;
-                //var c = x509ChainElement.Certificate;
-
-                //return c.Equals(rootCertificate);
-            };
+            }
+            handler.ServerCertificateCustomValidationCallback = (_, __, ___, ____) => true;
 
             _client = new HttpClient(handler);
         }
 
-        /// <summary>
-        /// Function that fixes the certificate so that you do not have to install it on the certificate store on the server
-        /// Source https://www.wn.se/showthread.php?p=20516204#post20516204
-        /// Author: Jack Jönsson from infringo.se 
-        /// </summary>
-        /// <param name="certs">Collection of certificates to get root CA from</param>
-        /// <returns></returns>
-        private static X509Certificate2 AssertCertsInStore(X509Certificate2Collection certs)
-        {
-            //Create typed array 
-            var certArr = certs.OfType<X509Certificate2>().ToArray();
-
-            //Build certificate chain 
-            var chain = new X509Chain();
-
-            chain.ChainPolicy.ExtraStore.AddRange(certArr.Where(o => !o.HasPrivateKey).ToArray());
-
-            var privateCert = Array.Find(certArr, o => o.HasPrivateKey);
-
-            if (privateCert == null) return null;
-
-            var result = chain.Build(privateCert);
-
-            //Get CA certs 
-            var caCerts = chain.ChainElements.OfType<X509ChainElement>().Where(o => !o.Certificate.HasPrivateKey).Select(o => o.Certificate).ToArray();
-
-            if (caCerts == null || caCerts.Length == 0) return null;
-
-            //Assert CA certs in intermediate CA store 
-            var intermediateStore = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser);
-
-            intermediateStore.Open(OpenFlags.ReadWrite);
-
-            foreach (var ca in caCerts)
-            {
-                if (!intermediateStore.Certificates.Contains(ca))
-                    intermediateStore.Add(ca);
-            }
-
-            intermediateStore.Close();
-
-            //Return last CA in chain (root CA) 
-            return caCerts.LastOrDefault();
-        }
-        
         /// <summary>
         /// Makes a swish payment via the e-commerce flow
         /// </summary>
@@ -327,6 +249,22 @@ namespace Swish
             var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             return JsonConvert.DeserializeObject<RefundStatusModel>(responseContent);
+        }
+        /// <summary>
+        /// Generates an URL to the Swish application. 
+        /// Used in the MCommerce-flow to start the Swish Application on the smart phone.
+        /// </summary>
+        /// <param name="token">The payment request token that the merchant has received from the CPC. Example: c28a4061470f4af48973bd2a4642b4fa</param>
+        /// <param name="redirectUrl">This callback URL is called after the payment is finished. It can be for example an app URL or a web URL. Example: https://www.mysite.com/paymentComplete/1234</param>
+        /// <returns></returns>
+        public static string GenerateSwishUrl(string token, string redirectUrl)
+        {
+            if(string.IsNullOrWhiteSpace(token))
+                throw new ArgumentException($"{nameof(token)} should not be empty", nameof(token));
+            if (string.IsNullOrWhiteSpace(redirectUrl))
+                throw new ArgumentException($"{nameof(redirectUrl)} should not be empty", nameof(redirectUrl));
+            var encodedRedirectUrl = WebUtility.UrlEncode(redirectUrl);
+            return $"swish://paymentrequest?token={token}&callbackurl={encodedRedirectUrl}";
         }
 
         private static SwishApiResponse ExtractSwishResponse(HttpResponseMessage responseMessage)

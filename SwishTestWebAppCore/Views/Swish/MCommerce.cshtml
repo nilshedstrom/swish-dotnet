@@ -1,0 +1,25 @@
+﻿@model SwishTestWebAppCore.Models.MPaySwishViewModel
+
+@{
+    ViewData["Title"] = "Pay with Swish";
+}
+
+<h2>Pay with Swish(M-Commerce)</h2>
+<form asp-controller="Swish" asp-action="StartMPayment" method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <div class="form-group">
+        <label asp-for="Amount"></label>
+        <input asp-for="Amount" class="form-control" placeholder="10" type="number" value="10"/>
+    </div>
+    <div class="form-group">
+        <label asp-for="Message"></label>
+        <input asp-for="Message" class="form-control" value="Kingston USB Flash Drive 8 GB" />
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

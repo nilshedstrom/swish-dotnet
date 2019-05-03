@@ -1,0 +1,47 @@
+﻿@using Swish;
+@model MCommercePaymentResponse
+
+@{
+    ViewBag.Title = "Swish payment started";
+}
+
+<h2>Swish payment started</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th scope="row">Id</th>
+            <td><a href="/Swish/CheckPayment/@Model.Id">@Model.Id</a></td>
+        </tr>
+        <tr>
+            <th scope="row">Location</th>
+            <td><a href="/Swish/CheckPayment/@Model.Id">@Model.Location</a></td>
+        </tr>        <tr>
+            <th scope="row">Token</th>
+            <td><a href='@ViewBag.SwishUrl'>@Model.Token</a></td>
+        </tr>
+        <tr>
+            <th scope="row">Status</th>
+            <td>
+                <div id="UpdateStatusDiv">
+                    Getting status
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $.ajax({url: "/API/SwishApi/@Model.Id", success: function(result){
+    $("#UpdateStatusDiv").html(result.status)
+    }});
+    </script>
+    
+}

@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -143,6 +145,38 @@ namespace Swish.UnitTests
             // Assert
             Assert.Equal(response.Location, locationHeader);
             Assert.Equal(response.Id, refundId);
+        }
+
+        [Fact]
+        public async Task GenerateSwishUrl_Returns_Valid_Url()
+        {
+            // Arrange
+            var token = "c28a4061470f4af48973bd2a4642b4fa";
+            var redirectUrl = "https://example.com/api/swishcb/mpaymentcomplete/123";
+
+            // Act
+            string result = SwishClient.GenerateSwishUrl(token, redirectUrl);
+
+            // Assert
+            result.Should().MatchEquivalentOf("swish://paymentrequest?token=*&callbackurl=*");
+            result.Should().Contain(token);
+            result.Should().Contain(WebUtility.UrlEncode(redirectUrl));
+        }
+
+        [Theory]
+        [InlineData(null, "https://www.backend.se/paymentComplete")]
+        [InlineData("", "https://www.backend.se/paymentComplete")]
+        [InlineData(" ", "https://www.backend.se/paymentComplete")]
+        [InlineData("c28a4061470f4af48973bd2a4642b4fa", null)]
+        [InlineData("c28a4061470f4af48973bd2a4642b4fa", "")]
+        [InlineData("c28a4061470f4af48973bd2a4642b4fa", " ")]
+        public async Task GenerateSwishUrl_Throws_Http_Exception_For_Invalid_Input(string token, string redirectUrl)
+        {
+            //Arrange 
+            Action act = () => SwishClient.GenerateSwishUrl(token, redirectUrl);
+
+            //Act & Assert
+            act.Should().Throw<ArgumentException>();
         }
 
         private HttpResponseMessage Create201HttpJsonResponseMessage<T>(T contentModel,
