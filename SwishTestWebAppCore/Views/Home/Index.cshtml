@@ -1,8 +1,17 @@
-﻿@{
+﻿@model DeviceDetectorNET.DeviceDetector
+@{
     ViewData["Title"] = "Home Page";
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <h1 class="display-4">Swish</h1>
+    @if (Model.IsMobile())
+    {
+        <p>For mobile devices we recommend the <a asp-controller="Swish" asp-action="MCommerce">Swish MCommerce</a> option</p>
+    }
+    else
+    {
+        <p>For non-mobile devices we recommend the <a asp-controller="Swish" asp-action="ECommerce">Swish ECommerce</a> option</p>
+    }
+    
 </div>

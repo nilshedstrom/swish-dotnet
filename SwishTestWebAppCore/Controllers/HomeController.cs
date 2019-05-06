@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using DeviceDetectorNET;
 using Microsoft.AspNetCore.Mvc;
 using SwishTestWebAppCore.Models;
 
@@ -12,7 +13,9 @@ namespace SwishTestWebAppCore.Controllers
     {
         public IActionResult Index()
         {
-            return View();
+            var dd = new DeviceDetector(Request.Headers["User-Agent"].ToString());
+            dd.Parse();
+            return View(dd);
         }
 
         public IActionResult Privacy()

@@ -24,7 +24,7 @@ namespace Swish.IntegrationTests
             _merchantId = "test";
         }
 
-        [Fact]
+        [Fact(Skip="Prod integration tests does not work")]
         public async Task CertificateAcceptedTest2()
         {
             var bytes = CertificateGenerator.GenerateP12(_merchantPrivateKey, _merchantCertificateDataInPEM, "");
@@ -66,7 +66,7 @@ namespace Swish.IntegrationTests
             Assert.NotNull(paymentStatus.ErrorMessage);
         }
 
-        [Fact]
+        [Fact(Skip= "Prod integration tests does not work")]
         public async Task CertificateAcceptedTest23()
         {
             var bytes = CertificateGenerator.GenerateP12(_merchantPrivateKey, _merchantCertificateDataInPEM, "");

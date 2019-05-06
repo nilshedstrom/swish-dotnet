@@ -68,6 +68,26 @@ namespace Swish.UnitTests
         }
 
         [Fact]
+        public async Task MakeECommercePayment_Should_Fix_PayerAlias()
+        {
+            string paymentId = "AB23D7406ECE4542A80152D909EF9F6B";
+            string locationHeader = $"https://mss.swicpc.bankgirot.se/swishcpcapi/v1/paymentrequests/{paymentId}";
+            var headerValues = new Dictionary<string, string>() { { "Location", locationHeader } };
+            _defaultECommercePaymentModel.PayerAlias = "0701234567";
+            var responseMessage = Create201HttpJsonResponseMessage(_defaultECommercePaymentModel, headerValues);
+            var mockHttp = MockHttp.WithResponseMessage(responseMessage);
+            var client = new SwishClient(mockHttp, _merchantId);
+
+            // Act
+            var response = await client.MakeECommercePaymentAsync(_defaultECommercePaymentModel);
+
+            // Assert
+            var body = await mockHttp.LastRequest.Content.ReadAsStringAsync();
+            var request = JsonConvert.DeserializeObject<ECommercePaymentModel>(body);
+            Assert.Equal("46701234567",request.PayerAlias);
+        }
+
+        [Fact]
         public async Task MakeECommercePayment_Throws_Swich_Exception_When_Status_Code_Is_422()
         {
             var errorMsg = "Testing error";
@@ -178,7 +198,6 @@ namespace Swish.UnitTests
             //Act & Assert
             act.Should().Throw<ArgumentException>();
         }
-
         private HttpResponseMessage Create201HttpJsonResponseMessage<T>(T contentModel,
             Dictionary<string, string> headerValues)
         {

@@ -82,13 +82,6 @@ namespace Swish
             CreateClient(clientCerts);
         }
 
-        public SwishClient(SwishEnvironment environment, X509Certificate2Collection certificates, string merchantId)
-        {
-            Environment = environment;
-            MerchantId = merchantId;
-            CreateClient(certificates);
-        }
-
         private void CreateClient(X509Certificate2Collection clientCerts)
         {
             var handler = new HttpClientHandler();
@@ -123,7 +116,7 @@ namespace Swish
         public async Task<ECommercePaymentResponse> MakeECommercePaymentAsync(ECommercePaymentModel payment)
         {
             payment.PayeeAlias = MerchantId;
-
+            payment.PayerAlias = FixPayerAlias(payment.PayerAlias);
             var response = await Post(payment, _paymentRequestsPath).ConfigureAwait(false);
             var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.StatusCode == (HttpStatusCode)422)
@@ -133,6 +126,15 @@ namespace Swish
             response.EnsureSuccessStatusCode();
 
             return ExtractSwishResponse(response) as ECommercePaymentResponse;
+        }
+
+        private static string FixPayerAlias(string payerAlias)
+        {
+            if (String.IsNullOrWhiteSpace(payerAlias))
+                return payerAlias;
+            if (payerAlias.StartsWith("07"))
+                return $"467{payerAlias.Substring(2)}";
+            return payerAlias;
         }
 
         /// <summary>
