@@ -1,22 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.KeyVault;
+using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Swish;
 
 namespace SwishTestWebAppCore
 {
-    public class SwishSettings
-    {
-        public string CallbackBaseUrl { get; set; }
-    }
     public class Startup
     {
         public Startup(IConfiguration configuration)
@@ -39,13 +39,20 @@ namespace SwishTestWebAppCore
             });
             services.AddSingleton<SwishClient>(provider =>
             {
-                var _merchantCertificateData = System.IO.File.ReadAllBytes("App_Data/1231181189.p12");
-                var _merchantCertificatePassword = "swish";
-                var _merchantId = "1231181189";
-                return new SwishClient(SwishEnvironment.Test, _merchantCertificateData, _merchantCertificatePassword,
-                    _merchantId);
+                var vault = Configuration["KeyVault:BaseUrl"];
+                var settings = provider.GetService<IOptionsMonitor<SwishSettings>>().CurrentValue;
+                if (!String.IsNullOrWhiteSpace(vault))
+                {
+                    var tokenProvider = new AzureServiceTokenProvider();
+                    var kvClient = new KeyVaultClient((authority, resource, scope) =>
+                        tokenProvider.KeyVaultTokenCallback(authority, resource, scope));
+                    var cert = kvClient.GetSecretAsync(vault, settings.CertificateName).Result;
+                    byte[] privateKeyBytes = Convert.FromBase64String(cert.Value);
+                    return new SwishClient(settings.Environment, privateKeyBytes, String.Empty, settings.MerchantId);
+                }
+                return new SwishClient(settings.Environment, System.IO.File.ReadAllBytes(settings.CertificateFile),
+                    settings.CertificatePassword, settings.MerchantId);
             });
-
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
 

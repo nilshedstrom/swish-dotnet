@@ -59,3 +59,62 @@ Thread.Sleep(10000);
 // Check refund request status
 var refundStatus = await client.GetRefundStatus(refundResponse.Id);
 ```
+# Sample implementation
+A sample implementation of Swish payments using ASP.NET Core 2.2 is included in the repo (SwishTestWebAppCore).
+
+The Swish servers are calling the callbackUrl specified when making the payment request. So the the sample implementation must be reachable from the Internet (if you want callbacks to work).
+
+There are two options for this
+### Deploy to cloud
+Deploy the sample implementation (SwishTestWebAppCore) to favourite cloud. It will be harder to debug the application this way.
+### Ngrok
+If you download [ngrok](https://dashboard.ngrok.com/get-started) you will be able to create an endpoint that is available on the Internet and is connected to your local web server.
+After you downloaded ngrok connect it to your ngrok account with
+```
+ngrok authtoken xxxxxxxxxxxxxxxxxxxxxxxxx
+```
+Then you can create a tunnel to your local web server with 
+```
+ngrok http https://localhost:44375 -host-header=localhost
+```
+In the output from ngrok you should look for the second line starting with "Forwarding"
+```
+Forwarding                    https://ffffffff.ngrok.io -> https://localhost:44375
+```
+Start the project SwishTestWebAppCore and try surfing to the ngrok url (https://ffffffff.ngrok.io). If everything works you should see the same site as if you access (https://localhost:44375/).
+
+Copy that url and right click on the project SwishTestWebAppCore and select "Manage User Secrets". Copy the following json to that window (secrets.json)
+```
+{
+  "Swish": {
+    "CallbackBaseUrl": "https://ffffffff.ngrok.io"
+  }
+}
+```
+Change the CallbackBaseUrl value to your ngrok url or the url to your deployed application.
+## Certificate in Keyvault
+The default configuration (in appsettings.json) reads the swish certificate from file (App_Data/1231181189.p12).
+
+There is also support for getting the swish certificate from an [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-vault/).
+
+All configuration changes can be done in appsettings.json, appsettings.Development.json or User Secrets.
+
+If you want to get your secrets from the KeyVault change the KeyVault->BaseUrl like this
+```
+{
+  "KeyVault": {
+    "BaseUrl": "https://mykeyvault.vault.azure.net/"
+  },
+  "Swish": {
+    "CallbackBaseUrl": "https://fffffff.ngrok.io",
+    "CertificateName": "MySwishCertificate",
+    "MerchantId": "1231181189",
+    "Environment": "Production"
+  }
+}
+```
+Where 
+* CertificateName is the name of your swish cerfiticate in the Key Vault.
+* Environment is the swish environment to use (Production or Test)
+* CertificatePassword is not needed when getting certificates from Key Vault
+
