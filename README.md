@@ -114,7 +114,10 @@ If you want to get your secrets from the KeyVault change the KeyVault->BaseUrl l
 }
 ```
 Where 
+* CallbackBaseUrl is  the base url to your Sample implementation that is reachable from the Internet (look above on how to set up ngrok)
 * CertificateName is the name of your swish cerfiticate in the Key Vault.
+* MerchantId is your swish number
 * Environment is the swish environment to use (Production or Test)
 * CertificatePassword is not needed when getting certificates from Key Vault
 
+If you want to test your production certificate but want to get it from a file you will need to change the value of CertificateFile, CertificatePassword,MerchantId and Environment. This can also be done in appsettings.json, appsettings.Development.json or User Secrets.
