@@ -22,10 +22,48 @@ namespace Swish
         Production
     }
 
+    public interface ISwishClient
+    {
+        /// <summary>
+        /// Makes a swish payment via the e-commerce flow
+        /// </summary>
+        /// <param name="payment">The payment details</param>
+        /// <returns>Payment response containing payment status location</returns>
+        Task<ECommercePaymentResponse> MakeECommercePaymentAsync(ECommercePaymentModel payment);
+
+        /// <summary>
+        /// Make a swish payment via the m-commerce flow
+        /// </summary>
+        /// <param name="payment">The payment details</param>
+        /// <returns>Payment response containing payment status location</returns>
+        Task<MCommercePaymentResponse> MakeMCommercePaymentAsync(MCommercePaymentModel payment);
+
+        /// <summary>
+        /// Get the current status of a payment
+        /// </summary>
+        /// <param name="id">The location id</param>
+        /// <returns>The payment status</returns>
+        Task<PaymentStatusModel> GetPaymentStatus(string id);
+
+        /// <summary>
+        /// Makes a refund request
+        /// </summary>
+        /// <param name="refund">The refund details</param>
+        /// <returns>The refund response containing the location of the refund status</returns>
+        Task<SwishApiResponse> MakeRefundAsync(RefundModel refund);
+
+        /// <summary>
+        /// Get the current status of a refund
+        /// </summary>
+        /// <param name="id">The refund location id</param>
+        /// <returns>The refund status</returns>
+        Task<RefundStatusModel> GetRefundStatus(string id);
+    }
+
     /// <summary>
     /// Swish client
     /// </summary>
-    public class SwishClient
+    public class SwishClient : ISwishClient
     {
         private HttpClient _client;
 
