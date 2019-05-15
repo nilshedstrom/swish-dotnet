@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
@@ -58,6 +59,15 @@ namespace Swish
         /// <param name="id">The refund location id</param>
         /// <returns>The refund status</returns>
         Task<RefundStatusModel> GetRefundStatus(string id);
+
+        /// <summary>
+        /// Generates an URL to the Swish application. 
+        /// Used in the MCommerce-flow to start the Swish Application on the smart phone.
+        /// </summary>
+        /// <param name="token">The payment request token that the merchant has received from the CPC. Example: c28a4061470f4af48973bd2a4642b4fa</param>
+        /// <param name="redirectUrl">This callback URL is called after the payment is finished. It can be for example an app URL or a web URL. Example: https://www.mysite.com/paymentComplete/1234</param>
+        /// <returns></returns>
+        string GenerateSwishUrl(string token, string redirectUrl);
     }
 
     /// <summary>
@@ -157,16 +167,14 @@ namespace Swish
             payment.PayerAlias = FixPayerAlias(payment.PayerAlias);
             var response = await Post(payment, _paymentRequestsPath).ConfigureAwait(false);
             var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            if (response.StatusCode == (HttpStatusCode)422)
+            if (response.StatusCode == HttpStatusCode.Created)
             {
-                throw new HttpRequestException(responseContent);
+                return ExtractSwishResponse(response) as ECommercePaymentResponse;
             }
-            response.EnsureSuccessStatusCode();
-
-            return ExtractSwishResponse(response) as ECommercePaymentResponse;
+            return GetErrorResponse<ECommercePaymentResponse>(responseContent, response.StatusCode);
         }
 
-        private static string FixPayerAlias(string payerAlias)
+        private string FixPayerAlias(string payerAlias)
         {
             if (String.IsNullOrWhiteSpace(payerAlias))
                 return payerAlias;
@@ -185,40 +193,59 @@ namespace Swish
             payment.PayeeAlias = MerchantId;
             var response = await Post(payment, _paymentRequestsPath).ConfigureAwait(false);
             var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            if (response.StatusCode == (HttpStatusCode)422)
+            if (response.StatusCode == HttpStatusCode.Created)
             {
-                throw new HttpRequestException(responseContent);
+                return ExtractMCommerceResponse(response);
             }
+            return GetErrorResponse<MCommercePaymentResponse>(responseContent, response.StatusCode);
+        }
 
-            /*
-            Potential Http status codes returned:
-            201 Created: Returned when Payment request was successfully created. Will return a Location header and if it is Swish m-commerce case, it will also return PaymentRequestToken header.
-            400 Bad Request: Returned when the Create Payment Request operation was malformed.
-            401 Unauthorized: Returned when there are authentication problems with the certificate. Or the Swish number in the certificate is not enrolled. Will return nothing else.
-            403 Forbidden: Returned when the payeeAlias in the payment request object is not the same as merchant’s Swish number.
-            415 Unsupported Media Type: Returned when Content-Type header is not “application/json”. Will return nothing else.
-            422 Unprocessable Entity: Returned when there are validation errors. Will return an Array of Error Objects.
-            500 Internal Server Error: Returned if there was some unknown/unforeseen error that occurred on the server, this should normally not happen. Will return nothing else.
-            Potential Error codes returned on Error Objects when validation fails (HTTP status code 422 is returned):
-            FF08 – PaymentReference is invalid
-            RP03 – Callback URL is missing or does not use Https
-            BE18 – Payer alias is invalid
-            RP01 – Missing Merchant Swish Number
-            PA02 – Amount value is missing or not a valid number
-            AM06 – Specified transaction amount is less than agreed minimum
-            AM02 – Amount value is too large
-            AM03 – Invalid or missing Currency
-            RP02 – Wrong formated message
-            RP06 – A payment request already exist for that payer. Only applicable for Swish ecommerce.
-            ACMT03 – Payer not Enrolled
-            ACMT01 – Counterpart is not activated
-            ACMT07 – Payee not Enrolled
-             */
-            // TODO: handle error codes like in the GetPaymentStatus(...) method
-
-            response.EnsureSuccessStatusCode();
-
-            return ExtractMCommerceResponse(response);
+        private static T GetErrorResponse<T>(string responseContent, HttpStatusCode statusCode) where T: SwishApiResponse, new()
+        {
+            switch (statusCode)
+            {
+                case HttpStatusCode.BadRequest:
+                    return new T
+                    {
+                        ErrorCode = ((int) statusCode).ToString(),
+                        ErrorMessage = "Bad Request: The Create Payment Request operation was malformed.",
+                    };
+                case HttpStatusCode.Unauthorized:
+                    return new T
+                    {
+                        ErrorCode = ((int) statusCode).ToString(),
+                        ErrorMessage =
+                            "Unauthorized: There are authentication problems with the certificate. Or the Swish number in the certificate is not enrolled.",
+                    };
+                case HttpStatusCode.Forbidden:
+                    return new T
+                    {
+                        ErrorCode = ((int) statusCode).ToString(),
+                        ErrorMessage =
+                            "Forbidden: The payeeAlias in the payment request object is not the same as merchant’s Swish number.",
+                    };
+                case HttpStatusCode.UnsupportedMediaType:
+                    return new T
+                    {
+                        ErrorCode = ((int) statusCode).ToString(),
+                        ErrorMessage = "Unsupported Media Type: The Content-Type header is not \"application/json\".",
+                    };
+                case HttpStatusCode.InternalServerError:
+                    return new T
+                    {
+                        ErrorCode = ((int) statusCode).ToString(),
+                        ErrorMessage =
+                            "Internal Server Error: There was some unknown/unforeseen error that occurred on the server, this should normally not happen.",
+                    };
+                case (HttpStatusCode) 422:
+                    return JsonConvert.DeserializeObject<List<T>>(responseContent).FirstOrDefault();
+                default:
+                    return new T
+                    {
+                        ErrorCode = ((int) statusCode).ToString(),
+                        ErrorMessage = $"{statusCode}: Unknown status code"
+                    };
+            }
         }
 
         /// <summary>
@@ -237,17 +264,20 @@ namespace Swish
                 case HttpStatusCode.Unauthorized:
                     return new PaymentStatusModel()
                     {
+                        ErrorCode = ((int)response.StatusCode).ToString(),
                         ErrorMessage = "Unauthorized: There are authentication problems with the certificate. Or the Swish number in the certificate is not enrolled.",
                     };
                 case HttpStatusCode.NotFound:
                     return new PaymentStatusModel()
                     {
+                        ErrorCode = ((int)response.StatusCode).ToString(),
                         ErrorMessage = "NotFound: Payment request was not found or it was not created by the merchant."
                     };
 
                 case HttpStatusCode.InternalServerError:
                     return new PaymentStatusModel()
                     {
+                        ErrorCode = ((int)response.StatusCode).ToString(),
                         ErrorMessage = "InternalServerError: There was some unknown/unforeseen error that occurred on the server, this should normally not happen."
                     };
             }
@@ -297,9 +327,9 @@ namespace Swish
         /// <param name="token">The payment request token that the merchant has received from the CPC. Example: c28a4061470f4af48973bd2a4642b4fa</param>
         /// <param name="redirectUrl">This callback URL is called after the payment is finished. It can be for example an app URL or a web URL. Example: https://www.mysite.com/paymentComplete/1234</param>
         /// <returns></returns>
-        public static string GenerateSwishUrl(string token, string redirectUrl)
+        public string GenerateSwishUrl(string token, string redirectUrl)
         {
-            if(string.IsNullOrWhiteSpace(token))
+            if (string.IsNullOrWhiteSpace(token))
                 throw new ArgumentException($"{nameof(token)} should not be empty", nameof(token));
             if (string.IsNullOrWhiteSpace(redirectUrl))
                 throw new ArgumentException($"{nameof(redirectUrl)} should not be empty", nameof(redirectUrl));
@@ -334,16 +364,14 @@ namespace Swish
             };
         }
 
-        private Task<HttpResponseMessage> Post<T>(T model, string path)
+        private async Task<HttpResponseMessage> Post<T>(T model, string path)
         {
             var json = JsonConvert.SerializeObject(model, new JsonSerializerSettings()
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             });
-
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            return _client.PostAsync(path, content);
+            return await _client.PostAsync(path, content);
         }
 
         private Task<HttpResponseMessage> Get(string path) => _client.GetAsync(path);

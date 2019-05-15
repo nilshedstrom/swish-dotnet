@@ -12,6 +12,7 @@ namespace Swish.UnitTests
 {
     public class SwishClientTests
     {
+        private const string SwishId = "11A86BE70EA346E4B1C39C874173F088";
         private readonly string _merchantId = "1231181189";
         private readonly ECommercePaymentModel _defaultECommercePaymentModel;
         private readonly MCommercePaymentModel _defaultMCommercePaymentModel;
@@ -48,6 +49,87 @@ namespace Swish.UnitTests
                 PayerPaymentReference = "0123456789",
                 Message = "Refund for Kingston USB Flash Drive 8 GB"
             };
+        }
+
+        [Theory]
+        [InlineData(500, "InternalServerError:")]
+        [InlineData(401, "Unauthorized:")]
+        [InlineData(404, "NotFound:")]
+        public async Task GetPaymeentStatus_Returns_Correct_ErrorMessage(int status, string message)
+        {
+            var mockHttp = MockHttp.WithStatus(status);
+            var client = new SwishClient(mockHttp, _merchantId);
+
+            var result = await client.GetPaymentStatus(SwishId);
+
+            result.ErrorMessage.Should().Contain(message);
+            result.ErrorCode.Should().Be(status.ToString());
+        }
+
+        [Theory]
+        [InlineData(400, "Bad Request:")]
+        [InlineData(401, "Unauthorized:")]
+        [InlineData(403, "Forbidden:")]
+        [InlineData(415, "Unsupported Media Type:")]
+        [InlineData(500, "Internal Server Error:")]
+        public async Task MakeECommercePaymentAsync_Returns_Correct_ErrorMessage(int status, string message)
+        {
+            var mockHttp = MockHttp.WithStatus(status);
+            var client = new SwishClient(mockHttp, _merchantId);
+
+            var result = await client.MakeECommercePaymentAsync(_defaultECommercePaymentModel);
+
+            result.ErrorMessage.Should().Contain(message);
+            result.ErrorCode.Should().Be(status.ToString());
+        }
+
+        [Theory]
+        [InlineData(400, "Bad Request:")]
+        [InlineData(401, "Unauthorized:")]
+        [InlineData(403, "Forbidden:")]
+        [InlineData(415, "Unsupported Media Type:")]
+        [InlineData(500, "Internal Server Error:")]
+        public async Task MakeMCommercePaymentAsync_Returns_Correct_ErrorMessage(int status, string message)
+        {
+            var mockHttp = MockHttp.WithStatus(status);
+            var client = new SwishClient(mockHttp, _merchantId);
+
+            var result = await client.MakeMCommercePaymentAsync(_defaultMCommercePaymentModel);
+
+            result.ErrorMessage.Should().Contain(message);
+            result.ErrorCode.Should().Be(status.ToString());
+        }
+
+        [Theory]
+        [InlineData("RP06", "A payment request already exist for that payer", "[{\"errorCode\":\"RP06\",\"errorMessage\":\"A payment request already exist for that payer\"}]")]
+        [InlineData("ACMT03", "Payer not Enrolled", "[{\"errorCode\":\"ACMT03\",\"errorMessage\":\"Payer not Enrolled\"}]")]
+        [InlineData("PA01", "Parameter is not correct.", "[{\"errorCode\":\"PA01\",\"errorMessage\":\"Parameter is not correct.\"}]")]
+        [InlineData("RP01", "Missing merchant Swish Number", "[{\"errorCode\":\"RP01\",\"errorMessage\":\"Missing merchant Swish Number\"}]")]
+        public async Task MakeECommercePaymentAsync_Returns_Correct_ErrorMessage_For_422(string errorCode, string errorMessage, string content)
+        {
+            var mockHttp = MockHttp.WithStatusAndContent(422, content);
+            var client = new SwishClient(mockHttp, _merchantId);
+
+            var result = await client.MakeECommercePaymentAsync(_defaultECommercePaymentModel);
+
+            result.ErrorMessage.Should().Contain(errorMessage);
+            result.ErrorCode.Should().Be(errorCode);
+        }
+
+        [Theory]
+        [InlineData("RP06", "A payment request already exist for that payer", "[{\"errorCode\":\"RP06\",\"errorMessage\":\"A payment request already exist for that payer\"}]")]
+        [InlineData("ACMT03", "Payer not Enrolled", "[{\"errorCode\":\"ACMT03\",\"errorMessage\":\"Payer not Enrolled\"}]")]
+        [InlineData("PA01", "Parameter is not correct.", "[{\"errorCode\":\"PA01\",\"errorMessage\":\"Parameter is not correct.\"}]")]
+        [InlineData("RP01", "Missing merchant Swish Number", "[{\"errorCode\":\"RP01\",\"errorMessage\":\"Missing merchant Swish Number\"}]")]
+        public async Task MakeMCommercePaymentAsync_Returns_Correct_ErrorMessage_For_422(string errorCode, string errorMessage, string content)
+        {
+            var mockHttp = MockHttp.WithStatusAndContent(422, content);
+            var client = new SwishClient(mockHttp, _merchantId);
+
+            var result = await client.MakeMCommercePaymentAsync(_defaultMCommercePaymentModel);
+
+            result.ErrorMessage.Should().Contain(errorMessage);
+            result.ErrorCode.Should().Be(errorCode);
         }
 
         [Fact]
@@ -88,26 +170,6 @@ namespace Swish.UnitTests
         }
 
         [Fact]
-        public async Task MakeECommercePayment_Throws_Swich_Exception_When_Status_Code_Is_422()
-        {
-            var errorMsg = "Testing error";
-            var mockHttp = MockHttp.WithStatusAndContent(422, errorMsg);
-            var client = new SwishClient(mockHttp, _merchantId);
-            var exception = await Assert.ThrowsAsync<HttpRequestException>(() => 
-                client.MakeECommercePaymentAsync(_defaultECommercePaymentModel));
-            Assert.Equal(errorMsg, exception.Message);
-        }
-
-        [Fact]
-        public async Task MakeECommercePayment_Throws_Http_Exception_For_Not_Ok_Status_Codes()
-        {
-            var mockHttp = MockHttp.WithStatus(500);
-            var client = new SwishClient(mockHttp, _merchantId);
-            await Assert.ThrowsAsync<HttpRequestException>(() => 
-            client.MakeECommercePaymentAsync(_defaultECommercePaymentModel));
-        }
-
-        [Fact]
         public async Task MakeMCommercePayment_Returns_Location_And_Token_Header_VaLues()
         {
             string paymentId = "AB23D7406ECE4542A80152D909EF9F6B";
@@ -127,27 +189,6 @@ namespace Swish.UnitTests
             Assert.Equal(locationHeader, response.Location);
             Assert.Equal(paymentId, response.Id);
             Assert.Equal("f34DS34lfd0d03fdDselkfd3ffk21", response.Token);
-        }
-
-        [Fact]
-        public async Task MakeMCommercePayment_Throws_Swich_Exception_When_Status_Code_Is_422()
-        {
-            var errorMsg = "Testing error";
-            var mockHttp = MockHttp.WithStatusAndContent(422, errorMsg);
-            var client = new SwishClient(mockHttp, _merchantId);
-            var exception = await Assert.ThrowsAsync<HttpRequestException>(() =>
-                client.MakeMCommercePaymentAsync(_defaultMCommercePaymentModel));
-
-            Assert.Equal(errorMsg, exception.Message);
-        }
-
-        [Fact]
-        public async Task MakeMCommercePayment_Throws_Http_Exception_For_Not_Ok_Status_Codes()
-        {
-            var mockHttp = MockHttp.WithStatus(500);
-            var client = new SwishClient(mockHttp, _merchantId);
-            await Assert.ThrowsAsync<HttpRequestException>(() =>
-            client.MakeMCommercePaymentAsync(_defaultMCommercePaymentModel));
         }
 
         [Fact]
@@ -173,9 +214,10 @@ namespace Swish.UnitTests
             // Arrange
             var token = "c28a4061470f4af48973bd2a4642b4fa";
             var redirectUrl = "https://example.com/api/swishcb/mpaymentcomplete/123";
+            var client = new SwishClient(null, _merchantId);
 
             // Act
-            string result = SwishClient.GenerateSwishUrl(token, redirectUrl);
+            string result = client.GenerateSwishUrl(token, redirectUrl);
 
             // Assert
             result.Should().MatchEquivalentOf("swish://paymentrequest?token=*&callbackurl=*");
@@ -193,7 +235,7 @@ namespace Swish.UnitTests
         public async Task GenerateSwishUrl_Throws_Http_Exception_For_Invalid_Input(string token, string redirectUrl)
         {
             //Arrange 
-            Action act = () => SwishClient.GenerateSwishUrl(token, redirectUrl);
+            Action act = () => new SwishClient(null, _merchantId).GenerateSwishUrl(token, redirectUrl);
 
             //Act & Assert
             act.Should().Throw<ArgumentException>();

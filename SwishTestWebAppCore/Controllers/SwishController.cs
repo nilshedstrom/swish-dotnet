@@ -53,7 +53,9 @@ namespace SwishTestWebAppCore.Controllers
             };
             //swish://paymentrequest?token=<token>&callbackurl=<callbackURL>
             var paymentResponse = await _client.MakeECommercePaymentAsync(ecommercePaymentModel);
-            return View(paymentResponse);
+            if(paymentResponse.IsSuccess)
+                return View(paymentResponse);
+            return View("SwishError", paymentResponse);
         }
         public async Task<IActionResult> StartMPayment(MPaySwishViewModel model)
         {
@@ -71,9 +73,13 @@ namespace SwishTestWebAppCore.Controllers
                 Message = model.Message
             };
             var paymentResponse = await _client.MakeMCommercePaymentAsync(mCommercePaymentModel);
-            var paymentFinishedUrl = $"{_settings.CallbackBaseUrl}/Swish/MPaymentCompleted/{paymentResponse.Id}";
-            var redirectUrl = SwishClient.GenerateSwishUrl(paymentResponse.Token, paymentFinishedUrl);
-            return Redirect(redirectUrl);
+            if (paymentResponse.IsSuccess)
+            {
+                var paymentFinishedUrl = $"{_settings.CallbackBaseUrl}/Swish/MPaymentCompleted/{paymentResponse.Id}";
+                var redirectUrl = _client.GenerateSwishUrl(paymentResponse.Token, paymentFinishedUrl);
+                return Redirect(redirectUrl);
+            }
+            return View("SwishError", paymentResponse);
         }
 
         [Route("Swish/MPaymentCompleted/{paymentId}")]

@@ -1,0 +1,25 @@
+﻿@model Swish.SwishApiResponse
+
+@{
+    ViewBag.Title = "Error starting Swish payment";
+}
+
+<h2>Error starting Swish payment</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th scope="col">ErrorCode</th>
+            <th scope="col">@Model.ErrorCode</th>
+        </tr>
+        <tr>
+            <th scope="col">ErrorMessage</th>
+            <th scope="col">@Model.ErrorMessage</th>
+        </tr>
+    </tbody>
+</table>
